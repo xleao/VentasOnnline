@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Admin - Órdenes</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{primary:"#6F5E53","background-light":"#F7F5F2","background-dark":"#211911","brand":"#A0744E"},fontFamily:{display:["Inter","sans-serif"]}}}}</script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script defer src="assets/app.js"></script>
+</head>
+<body data-admin-page class="bg-background-light dark:bg-background-dark font-display text-[#2b211b]">
+<div class="relative flex min-h-screen w-full flex-col">
+  <header class="w-full border-b border-primary/20 bg-white/80 backdrop-blur-sm">
+    <div class="max-w-6xl mx-auto h-16 flex items-center justify-between px-4">
+      <div class="flex items-center gap-3">
+        <div class="size-6 text-primary"><svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><path d="M36.7273 44C33.9891 44 31.6043 39.8386 30.3636 33.69C29.123 39.8386 26.7382 44 24 44C21.2618 44 18.877 39.8386 17.6364 33.69C16.3957 39.8386 14.0109 44 11.2727 44C7.25611 44 4 35.0457 4 24C4 12.9543 7.25611 4 11.2727 4C14.0109 4 16.3957 8.16144 17.6364 14.31C18.877 8.16144 21.2618 4 24 4C26.7382 4 29.123 8.16144 30.3636 14.31C31.6043 8.16144 33.9891 4 36.7273 4C40.7439 4 44 12.9543 44 24C44 35.0457 40.7439 44 36.7273 44Z" fill="currentColor"/></svg></div>
+        <h2 class="text-lg font-bold">Makitu Store</h2>
+      </div>
+      <nav class="hidden md:flex items-center gap-6">
+        <a class="text-sm" href="admin-dashboard.html">Dashboard</a>
+        <a class="text-sm" href="admin-categorias.html">Categorías</a>
+        <a class="text-sm" href="admin-productos.html">Productos</a>
+        <a class="px-3 py-1.5 rounded-full bg-primary text-white text-sm font-bold" href="admin-ordenes.html">Órdenes</a>
+        <a class="text-sm" href="admin-usuarios.html">Usuarios</a>
+      </nav>
+      <div class="flex items-center gap-2 sm:gap-3 relative">
+        <button id="btn-notif" class="relative h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center rounded-full hover:bg-primary/10"><span class="material-symbols-outlined text-base sm:text-[20px]">notifications</span></button>
+        <button id="btn-admin-logout" class="min-w-[110px] sm:min-w-[120px] items-center justify-center rounded-full h-9 sm:h-10 px-3 sm:px-4 border bg-white text-xs sm:text-sm font-bold">Cerrar sesión</button>
+      </div>
+    </div>
+    <nav class="md:hidden border-t border-primary/10 bg-white/80">
+      <div class="max-w-6xl mx-auto grid grid-cols-5 gap-2 px-4 py-2 text-[11px] font-medium text-[#6b5b52]">
+        <a href="admin-dashboard.html" class="flex flex-col items-center gap-0.5">
+          <span class="material-symbols-outlined text-base">leaderboard</span>
+          <span>Dashboard</span>
+        </a>
+        <a href="admin-categorias.html" class="flex flex-col items-center gap-0.5">
+          <span class="material-symbols-outlined text-base">category</span>
+          <span>Categorías</span>
+        </a>
+        <a href="admin-productos.html" class="flex flex-col items-center gap-0.5">
+          <span class="material-symbols-outlined text-base">inventory_2</span>
+          <span>Productos</span>
+        </a>
+        <a href="admin-ordenes.html" class="flex flex-col items-center gap-0.5 text-primary">
+          <span class="material-symbols-outlined text-base">receipt_long</span>
+          <span>Órdenes</span>
+        </a>
+        <a href="admin-usuarios.html" class="flex flex-col items-center gap-0.5">
+          <span class="material-symbols-outlined text-base">group</span>
+          <span>Usuarios</span>
+        </a>
+      </div>
+    </nav>
+  </header>
+  <main class="container mx-auto px-4 py-8">
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-3xl font-black mb-6">Gestión de Órdenes</h1>
+    <div class="rounded-2xl border bg-white p-4 shadow-sm mb-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div>
+          <label class="text-xs text-gray-500">Estado</label>
+          <select id="f-estado" class="mt-1 h-10 rounded-lg border px-3 text-sm w-full"><option value="">Todos</option><option value="pendiente">Pendiente</option><option value="expirada">Expirada</option><option value="confirmada">Confirmada</option><option value="entregada">Entregada</option></select>
+        </div>
+        <div><label class="text-xs text-gray-500">Desde</label><input id="f-desde" type="date" class="mt-1 h-10 rounded-lg border px-3 text-sm w-full"/></div>
+        <div><label class="text-xs text-gray-500">Hasta</label><input id="f-hasta" type="date" class="mt-1 h-10 rounded-lg border px-3 text-sm w-full"/></div>
+      </div>
+      <div class="mt-3 flex items-center gap-3"><button id="btn-filtrar" class="h-10 px-4 rounded-full bg-primary text-white text-sm font-bold">Filtrar</button><button id="btn-limpiar" class="h-10 px-4 rounded-full border text-sm font-bold">Limpiar Filtros</button></div>
+    </div>
+    <div class="rounded-2xl border bg-white overflow-x-auto">
+      <div class="min-w-[720px]">
+        <div class="grid grid-cols-12 gap-2 px-3 py-2 bg-gray-50 text-sm font-medium">
+          <span class="col-span-2">ID DE ORDEN</span>
+          <span class="col-span-2">FECHA</span>
+          <span class="col-span-3">CLIENTE</span>
+          <span class="col-span-2">ESTADO</span>
+          <span class="col-span-1 text-right pr-2">TOTAL</span>
+          <span class="col-span-2 text-right pr-2">ACCIONES</span>
+        </div>
+        <div id="rows" class="divide-y"></div>
+      </div>
+    </div>
+    <div class="mt-3 text-sm text-gray-600" id="result-info"></div>
+    <div id="pager" class="mt-2 flex items-center justify-center gap-2"></div>
+  </div>
+  </main>
+</div>
+<script>
+async function requireAdmin(){
+  const ok = await Auth.requireAuth(); if(!ok) return false;
+  try{ if(sessionStorage.getItem('is_admin_flag')==='1'){ return true; } }catch{}
+  try{
+    const { data:rpcVal, error:rpcErr } = await supabaseClient.rpc('fn_is_admin');
+    if(!rpcErr && rpcVal===true){ try{ sessionStorage.setItem('is_admin_flag','1'); }catch{} return true; }
+    if(!rpcErr && rpcVal===false){ location.href='home.html'; return false; }
+  }catch{}
+  try{
+    const s=await Auth.getSession(); const uid=s?.user?.id;
+    const { data, error } = await supabaseClient.from('usuarios').select('es_admin').eq('id',uid).maybeSingle();
+    if(error){ try{ sessionStorage.setItem('is_admin_flag','1'); }catch{} return true; }
+    if(data?.es_admin){ try{ sessionStorage.setItem('is_admin_flag','1'); }catch{} return true; }
+    location.href='home.html'; return false;
+  }catch{ try{ sessionStorage.setItem('is_admin_flag','1'); }catch{} return true; }
+}
+let state={page:1,size:5,estado:'',desde:'',hasta:''};
+function badge(est){ const m=String(est||'').toLowerCase();
+  if(m==='confirmada') return '<span class="px-2 py-1 rounded-full text-xs bg-blue-200 text-blue-800">Confirmada</span>';
+  if(m==='entregada') return '<span class="px-2 py-1 rounded-full text-xs bg-green-200 text-green-800">Entregada</span>';
+  if(m==='expirada') return '<span class="px-2 py-1 rounded-full text-xs bg-red-200 text-red-800">Expirada</span>';
+  return '<span class="px-2 py-1 rounded-full text-xs bg-amber-200 text-amber-800">Pendiente</span>';
+}
+function s(n){return `S/ ${(n||0).toFixed(2)}`}
+async function load(){
+  const rows=document.getElementById('rows'); const pager=document.getElementById('pager'); const ri=document.getElementById('result-info');
+  rows.innerHTML = '<div class="px-3 py-3 text-sm text-gray-600">Cargando...</div>';
+  let data = [];
+  try{
+    const { data:res, error } = await supabaseClient.rpc('fn_admin_orders_list');
+    if(error){ console.error('load ordenes error', error); rows.innerHTML = '<div class="px-3 py-3 text-sm text-red-700">No se pudieron cargar las órdenes.</div>'; pager.innerHTML=''; ri.textContent=''; return; }
+    data = res||[];
+  }catch(err){ console.error('load ordenes exception', err); rows.innerHTML = '<div class="px-3 py-3 text-sm text-red-700">Error inesperado cargando órdenes.</div>'; pager.innerHTML=''; ri.textContent=''; return; }
+  const filtered=(data||[])
+    .filter(o=>!state.estado || String(o.estado).toLowerCase()===state.estado)
+    .filter(o=>!state.desde || new Date(o.creado_en)>=new Date(state.desde))
+    .filter(o=>!state.hasta || new Date(o.creado_en)<=new Date(state.hasta));
+  const start=(state.page-1)*state.size; const pageItems=filtered.slice(start, start+state.size);
+  rows.innerHTML = pageItems.map(o=>`<div class='grid grid-cols-12 items-center gap-2 px-3 py-2'>
+    <span class='col-span-2'>#${o.id}</span>
+    <span class='col-span-2 whitespace-nowrap'>${new Date(o.creado_en).toLocaleDateString()}</span>
+    <div class='col-span-3 min-w-0'>
+      <p class='text-sm font-medium truncate'>${o.usuarios?.nombre || 'Cliente'}</p>
+      <p class='text-[11px] text-gray-500 truncate'>${o.usuarios?.email || ''}</p>
+    </div>
+    <span class='col-span-2'>${badge(o.estado)}</span>
+    <span class='col-span-1 font-bold text-right pr-2 whitespace-nowrap'>${s(Number(o.total)||0)}</span>
+    <div class='col-span-2 flex items-center justify-end gap-2 pr-2 flex-nowrap'>
+      <button type='button' data-view='${o.id}' class='px-3 py-1.5 text-xs rounded-full border hover:bg-primary/5'>Ver más</button>
+    </div>
+  </div>`).join('');
+  const totalPages=Math.max(1, Math.ceil(filtered.length/state.size));
+  pager.innerHTML='';
+  const prev=document.createElement('button'); prev.textContent='Anterior'; prev.className='px-3 h-9 rounded-full border bg-white text-sm'; prev.disabled=state.page<=1; prev.onclick=()=>{state.page--; load();};
+  const info=document.createElement('span'); info.className='text-sm px-2'; info.textContent=`Página ${state.page} de ${totalPages}`;
+  const next=document.createElement('button'); next.textContent='Siguiente'; next.className='px-3 h-9 rounded-full border bg-white text-sm'; next.disabled=state.page>=totalPages; next.onclick=()=>{state.page++; load();};
+  pager.append(prev,info,next);
+  const a=filtered.length?start+1:0; const b=Math.min(filtered.length, start+state.size); ri.textContent=`Mostrando ${a} a ${b} de ${filtered.length} resultados`;
+}
+function bind(){
+  document.getElementById('btn-filtrar').addEventListener('click',()=>{ state.estado=(document.getElementById('f-estado').value||'').toLowerCase(); state.desde=document.getElementById('f-desde').value; state.hasta=document.getElementById('f-hasta').value; state.page=1; load(); });
+  document.getElementById('btn-limpiar').addEventListener('click',()=>{ document.getElementById('f-estado').value=''; document.getElementById('f-desde').value=''; document.getElementById('f-hasta').value=''; state={page:1,size:5,estado:'',desde:'',hasta:''}; load(); });
+  document.getElementById('rows').addEventListener('click', (e)=>{
+    const t=e.target; if(!(t instanceof Element)) return;
+    const view=t.closest('[data-view]');
+    if(view){ const id=view.getAttribute('data-view'); location.href = `admin-orden.html?id=${id}`; }
+  });
+}
+window.addEventListener('DOMContentLoaded', async()=>{ if(await requireAdmin()){ bind(); load(); document.getElementById('btn-admin-logout')?.addEventListener('click', Auth.signOut); }});
+</script>
+</body></html>

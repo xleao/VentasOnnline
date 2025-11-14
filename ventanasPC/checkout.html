@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Finalizar Compra - Makitu Store</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{primary:"#e68019","background-light":"#f8f7f6","background-dark":"#211911","theme-accent":"#BFAE9F","theme-text-primary":"#5D4037","theme-text-secondary":"#D7C7B6","theme-bg-main":"#FDFBF6"},fontFamily:{display:["Inter","sans-serif"]},borderRadius:{DEFAULT:"0.25rem",lg:"0.5rem",xl:"0.75rem",full:"9999px"}}}}</script>
+<style>
+.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}
+@keyframes pulse-scale{0%{transform:scale(1)}50%{transform:scale(1.03)}100%{transform:scale(1)}}
+.btn-pulse{animation:pulse-scale 1.4s ease-in-out infinite}
+</style>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script defer src="assets/app.js"></script>
+</head>
+<body class="font-display bg-theme-bg-main dark:bg-background-dark text-theme-text-primary dark:text-gray-200">
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+<main class="flex-1 justify-center py-10 px-4 sm:px-6 lg:px-8">
+<div class="flex flex-col w-full max-w-6xl mx-auto">
+<div class="flex flex-wrap justify-between gap-4 p-4"><p class="text-4xl font-black w-full">Finalizar Compra</p></div>
+<div class="flex flex-col lg:flex-row gap-12 mt-6">
+<div class="w-full lg:w-1/2 flex flex-col gap-6">
+<div class="flex flex-col gap-4">
+<h2 class="text-2xl font-bold px-4">Tus datos para la entrega</h2>
+<div class="flex max-w-[480px] flex-wrap items-end gap-4 px-4 py-3"><label class="flex flex-col min-w-40 flex-1"><p class="text-base font-medium pb-2">Nombre Completo</p><input id="nombre" class="form-input w-full rounded-lg text-theme-text-primary border bg-white h-14 p-[15px]" placeholder="Ej: Ana Pérez"/></label></div>
+<div class="flex max-w-[480px] flex-wrap items-end gap-4 px-4 py-3"><label class="flex flex-col min-w-40 flex-1"><p class="text-base font-medium pb-2">Teléfono</p><input id="telefono" class="form-input w-full rounded-lg text-theme-text-primary border bg-white h-14 p-[15px]" placeholder="Ej: 987654321"/></label></div>
+<p class="px-4 text-sm text-theme-text-primary/70">Estos datos se usarán para coordinar la entrega de tu pedido.</p>
+</div>
+<div class="flex flex-col gap-2 px-4">
+  <h3 class="text-lg font-bold">Método de pago</h3>
+  <div class="flex items-center gap-4">
+    <label class="flex items-center gap-2"><input type="radio" name="metodo" value="YAPE" checked/> <span>Yape</span></label>
+    <label class="flex items-center gap-2"><input type="radio" name="metodo" value="EFECTIVO"/> <span>Efectivo (contraentrega en la UNI)</span></label>
+  </div>
+  <p class="text-sm text-theme-text-primary/70">Si eliges efectivo, coordinaremos por WhatsApp al <span class="font-bold">943 836 076</span> para acordar dónde en la UNI se hará la entrega.</p>
+  <p class="text-sm text-theme-text-primary/70">La orden quedará confirmada cuando el administrador la marque como confirmada.</p>
+</div>
+<div class="px-4 pt-4 mt-auto"><button id="confirmar" class="btn-pulse flex w-full max-w-[480px] items-center justify-center rounded-xl h-14 text-white text-lg font-bold" style="background-color:#8D6A4A">Confirmar y generar orden</button></div>
+</div>
+<div class="w-full lg:w-1/2 flex flex-col bg-white border rounded-xl p-6 shadow-sm">
+<h2 class="text-2xl font-bold mb-6">Resumen de tu orden</h2>
+<div id="resumen-items" class="flex-grow space-y-4 overflow-y-auto pr-2 max-h-[400px]"></div>
+<div class="mt-auto pt-6 border-t space-y-3"><div class="flex justify-between text-base"><span>Subtotal</span><span id="resumen-subtotal">S/ 0.00</span></div><div class="flex justify-between text-base"><span>Envío</span><span>S/ 0.00</span></div><div class="flex justify-between text-xl font-bold mt-2 pt-3 border-t"><span>Total</span><span id="resumen-total">S/ 0.00</span></div></div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<script>
+function s(n){return `S/ ${(n||0).toFixed(2)}`}
+function renderResumen(){
+  const items = Cart.read();
+  const c = document.getElementById('resumen-items');
+  if(items.length===0){ c.innerHTML = `<div class='text-sm'>Tu carrito está vacío</div>`; document.getElementById('resumen-subtotal').textContent=s(0); document.getElementById('resumen-total').textContent=s(0); return; }
+  c.innerHTML = items.map(it=>`<div class='flex items-center gap-4'><img class='w-20 h-20 object-cover rounded-lg' src='${it.imagen_url||''}'/><div class='flex-grow'><p class='font-semibold'>${it.nombre}</p><p class='text-sm'>${it.cantidad} × S/ ${(Number(it.precio_unitario)||0).toFixed(2)}</p></div><p class='font-bold'>${s((Number(it.precio_unitario)||0)*it.cantidad)}</p></div>`).join('');
+  const total = Cart.total();
+  document.getElementById('resumen-subtotal').textContent=s(total);
+  document.getElementById('resumen-total').textContent=s(total);
+}
+
+async function initCheckout(){
+  const ok = await Auth.requireAuth();
+  if(!ok) return;
+  // Prefill nombre/telefono si existen en usuarios
+  try {
+    const s = await Auth.getSession();
+    const uid = s?.user?.id;
+    if(uid){
+      const { data } = await supabaseClient.from('usuarios').select('*').eq('id', uid).maybeSingle();
+      if(data){
+        if(data.nombre) document.getElementById('nombre').value = data.nombre;
+        if(data.telefono) document.getElementById('telefono').value = data.telefono;
+      }
+    }
+  } catch {}
+
+  renderResumen();
+
+  const btn = document.getElementById('confirmar');
+  btn.addEventListener('click', async ()=>{
+    const nombre = document.getElementById('nombre').value.trim();
+    const telefono = document.getElementById('telefono').value.trim();
+    const metodo = (document.querySelector('input[name="metodo"]:checked')?.value)||'YAPE';
+    const items = Cart.read();
+    const total = Cart.total();
+    if(items.length===0){ alert('Tu carrito está vacío'); return; }
+    if(!nombre){ alert('Ingresa tu nombre'); return; }
+    if(!telefono){ alert('Ingresa tu teléfono'); return; }
+    btn.disabled = true; btn.textContent = 'Generando orden...';
+    try{
+      const session = await Auth.getSession();
+      const uid = session?.user?.id;
+      if(!uid){ throw new Error('Sesión inválida'); }
+      // Guardar datos del usuario
+      await supabaseClient.from('usuarios').upsert({ id: uid, nombre, telefono }, { onConflict: 'id' });
+      // Crear orden
+      const vence = new Date(Date.now()+20*60*1000).toISOString();
+      const { data:orden, error:oErr } = await supabaseClient.from('ordenes').insert({ usuario_id: uid, estado: 'pendiente', metodo_pago: metodo, total, vence_en: vence }).select().single();
+      if(oErr) throw oErr;
+      // Crear items (incluye producto_nombre para cumplir NOT NULL)
+      const orderItems = items.map(it=>({
+        orden_id: orden.id,
+        producto_id: it.producto_id,
+        producto_nombre: it.nombre,
+        cantidad: it.cantidad,
+        precio_unitario: Number(it.precio_unitario)||0,
+        subtotal: (Number(it.precio_unitario)||0) * (it.cantidad||0)
+      }));
+      const { error:oiErr } = await supabaseClient.from('orden_items').insert(orderItems);
+      if(oiErr) throw oiErr;
+      // Descontar stock producto a producto (si la columna existe)
+      for(const it of items){
+        try {
+          await supabaseClient.from('productos').update({}).eq('id', it.producto_id).select('stock').single();
+          await supabaseClient.rpc?.('decrement_stock', { p_id: it.producto_id, p_qty: it.cantidad });
+        } catch {}
+      }
+      // Limpiar carrito y redirigir
+      Cart.clear();
+      location.href = `orden.html?id=${orden.id}`;
+    }catch(err){
+      alert(err.message || 'No se pudo generar la orden');
+    }finally{
+      btn.disabled = false; btn.textContent = 'Confirmar y generar orden';
+    }
+  });
+}
+
+window.addEventListener('DOMContentLoaded', initCheckout);
+</script>
+</body></html>

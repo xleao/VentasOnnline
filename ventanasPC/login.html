@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Login - Makitu Store</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{primary:"#6F5E53","background-light":"#F7F5F2","background-dark":"#211911","text-main":"#333333"},fontFamily:{display:["Inter","sans-serif"]}}}}</script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script defer src="assets/app.js"></script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-text-main dark:text-background-light">
+<div class="relative flex min-h-screen w-full flex-col">
+<main class="max-w-md mx-auto px-4 py-12">
+  <h1 class="text-3xl font-black mb-6 text-center">Acceder a Makitu Store</h1>
+  <div class="bg-white rounded-xl border p-0 overflow-hidden">
+    <div class="grid grid-cols-2">
+      <button id="tab-login" class="px-4 py-3 text-center font-bold bg-primary/10">Iniciar sesión</button>
+      <button id="tab-register" class="px-4 py-3 text-center">Crear cuenta</button>
+    </div>
+    <div class="p-6 space-y-4">
+      <form id="form-login" class="space-y-4">
+        <input id="login-email" class="w-full border rounded-lg h-12 px-3" placeholder="Email" type="email" required/>
+        <input id="login-pass" class="w-full border rounded-lg h-12 px-3" placeholder="Contraseña" type="password" required/>
+        <button class="w-full h-12 rounded-lg bg-primary text-white font-bold" type="submit">Ingresar</button>
+      </form>
+      <form id="form-register" class="space-y-4 hidden">
+        <input id="reg-nombre" class="w-full border rounded-lg h-12 px-3" placeholder="Nombre completo" type="text" required/>
+        <input id="reg-email" class="w-full border rounded-lg h-12 px-3" placeholder="Email" type="email" required/>
+        <input id="reg-pass" class="w-full border rounded-lg h-12 px-3" placeholder="Contraseña" type="password" required/>
+        <button class="w-full h-12 rounded-lg bg-primary text-white font-bold" type="submit">Crear cuenta</button>
+      </form>
+      <div class="text-center text-sm">o</div>
+      <button id="btn-google" class="w-full h-12 rounded-lg border font-bold">Continuar con Google</button>
+      <p id="auth-msg" class="text-center text-sm text-red-600"></p>
+    </div>
+  </div>
+  <p class="text-center text-sm mt-3 text-text-main/70">Serás redirigido a la ruta que solicitó sesión.</p>
+</main>
+</div>
+<script>
+async function checkLoggedRedirect(){
+  const s = await Auth.getSession();
+  if(s){
+    await Auth.postLoginRedirect();
+  }
+}
+
+function switchTab(which){
+  const login = document.getElementById('form-login');
+  const reg = document.getElementById('form-register');
+  const t1 = document.getElementById('tab-login');
+  const t2 = document.getElementById('tab-register');
+  if(which==='login'){ login.classList.remove('hidden'); reg.classList.add('hidden'); t1.classList.add('bg-primary/10','font-bold'); t2.classList.remove('bg-primary/10','font-bold'); }
+  else { reg.classList.remove('hidden'); login.classList.add('hidden'); t2.classList.add('bg-primary/10','font-bold'); t1.classList.remove('bg-primary/10','font-bold'); }
+}
+
+document.getElementById('tab-login').addEventListener('click', ()=>switchTab('login'));
+document.getElementById('tab-register').addEventListener('click', ()=>switchTab('register'));
+
+document.getElementById('form-login').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-pass').value.trim();
+  const msg = document.getElementById('auth-msg'); msg.textContent='';
+  try{
+    await Auth.signInEmail(email, pass);
+    await Auth.postLoginRedirect();
+  }catch(err){ msg.textContent = err.message || 'Error al iniciar sesión'; }
+});
+
+document.getElementById('form-register').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const email = document.getElementById('reg-email').value.trim();
+  const pass = document.getElementById('reg-pass').value.trim();
+  const nombre = document.getElementById('reg-nombre').value.trim();
+  const msg = document.getElementById('auth-msg'); msg.textContent='';
+  try{
+    await Auth.signUpEmail(email, pass, nombre);
+    await Auth.postLoginRedirect();
+  }catch(err){ msg.textContent = err.message || 'Error al registrarse'; }
+});
+
+document.getElementById('btn-google').addEventListener('click', async ()=>{
+  try{ await Auth.signInGoogle(); }catch(err){ document.getElementById('auth-msg').textContent = err.message || 'Error con Google'; }
+});
+
+window.addEventListener('DOMContentLoaded', checkLoggedRedirect);
+</script>
+</body></html>

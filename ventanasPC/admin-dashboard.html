@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Admin - Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{primary:"#6F5E53","background-light":"#F7F5F2","background-dark":"#211911","brand":"#A0744E"},fontFamily:{display:["Inter","sans-serif"]}}}}</script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script defer src="assets/app.js"></script>
+</head>
+<body data-admin-page class="bg-background-light dark:bg-background-dark font-display text-[#2b211b] dark:text-[#f8f7f6]">
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+  <header class="w-full border-b border-primary/20 bg-white/80 backdrop-blur-sm">
+    <div class="max-w-6xl mx-auto h-16 flex items-center justify-between px-4">
+      <div class="flex items-center gap-3">
+        <div class="size-6 text-primary"><svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><path d="M36.7273 44C33.9891 44 31.6043 39.8386 30.3636 33.69C29.123 39.8386 26.7382 44 24 44C21.2618 44 18.877 39.8386 17.6364 33.69C16.3957 39.8386 14.0109 44 11.2727 44C7.25611 44 4 35.0457 4 24C4 12.9543 7.25611 4 11.2727 4C14.0109 4 16.3957 8.16144 17.6364 14.31C18.877 8.16144 21.2618 4 24 4C26.7382 4 29.123 8.16144 30.3636 14.31C31.6043 8.16144 33.9891 4 36.7273 4C40.7439 4 44 12.9543 44 24C44 35.0457 40.7439 44 36.7273 44Z" fill="currentColor"/></svg></div>
+        <h2 class="text-lg font-bold">Makitu Store</h2>
+      </div>
+      <nav class="hidden md:flex items-center gap-6">
+        <a class="px-3 py-1.5 rounded-full bg-primary text-white text-sm font-bold" href="admin-dashboard.html">Dashboard</a>
+        <a class="text-sm" href="admin-categorias.html">Categorías</a>
+        <a class="text-sm" href="admin-productos.html">Productos</a>
+        <a class="text-sm" href="admin-ordenes.html">Órdenes</a>
+        <a class="text-sm" href="admin-usuarios.html">Usuarios</a>
+      </nav>
+      <div class="flex items-center gap-2 sm:gap-3 relative">
+        <button id="btn-notif" class="relative h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center rounded-full hover:bg-primary/10"><span class="material-symbols-outlined text-base sm:text-[20px]">notifications</span><span id="notif-dot" class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full hidden"></span></button>
+        <button id="btn-admin-logout" class="min-w-[110px] sm:min-w-[120px] items-center justify-center rounded-full h-9 sm:h-10 px-3 sm:px-4 border bg-white text-xs sm:text-sm font-bold">Cerrar sesión</button>
+        <div id="notif-panel" class="hidden absolute right-0 top-12 w-80 rounded-xl border bg-white shadow-lg overflow-hidden">
+          <div class="px-4 py-2 border-b font-bold">Últimas órdenes</div>
+          <div id="notif-list" class="max-h-80 overflow-auto divide-y"></div>
+          <a href="admin-ordenes.html" class="block text-center text-sm px-4 py-2 hover:bg-primary/5">Ver todas</a>
+        </div>
+      </div>
+    </div>
+    <nav class="md:hidden border-t border-primary/10 bg-white/80">
+      <div class="max-w-6xl mx-auto grid grid-cols-5 gap-2 px-4 py-2 text-[11px] font-medium text-[#6b5b52]">
+        <a href="admin-dashboard.html" class="flex flex-col items-center gap-0.5 text-primary">
+          <span class="material-symbols-outlined text-base">leaderboard</span>
+          <span>Dashboard</span>
+        </a>
+        <a href="admin-categorias.html" class="flex flex-col items-center gap-0.5">
+          <span class="material-symbols-outlined text-base">category</span>
+          <span>Categorías</span>
+        </a>
+        <a href="admin-productos.html" class="flex flex-col items-center gap-0.5">
+          <span class="material-symbols-outlined text-base">inventory_2</span>
+          <span>Productos</span>
+        </a>
+        <a href="admin-ordenes.html" class="flex flex-col items-center gap-0.5">
+          <span class="material-symbols-outlined text-base">receipt_long</span>
+          <span>Órdenes</span>
+        </a>
+        <a href="admin-usuarios.html" class="flex flex-col items-center gap-0.5">
+          <span class="material-symbols-outlined text-base">group</span>
+          <span>Usuarios</span>
+        </a>
+      </div>
+    </nav>
+  </header>
+  <main class="container mx-auto px-4 py-6 sm:py-8">
+    <div class="max-w-6xl mx-auto">
+      <h1 class="text-3xl sm:text-4xl font-black mb-2">Dashboard</h1>
+      <p class="text-sm text-[#6b5b52] mb-6">Un resumen del estado actual de tu tienda.</p>
+      <div id="cards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- metric cards injected -->
+      </div>
+      <div class="mt-8 rounded-2xl border bg-white p-6 shadow-sm">
+        <h3 class="text-lg font-bold mb-2">Rendimiento de Ventas</h3>
+        <p id="sales-7d" class="text-2xl font-extrabold mb-1">S/ 0.00</p>
+        <p id="sales-delta" class="text-sm text-green-700 mb-4">+0.0% vs. semana anterior</p>
+        <svg id="spark" viewBox="0 0 100 30" class="w-full h-40 sm:h-48 rounded-xl bg-[linear-gradient(180deg,#E8DED5_0%,#fff_100%)]"></svg>
+      </div>
+    </div>
+  </main>
+</div>
+<script>
+async function requireAdmin(){
+  const ok = await Auth.requireAuth(); if(!ok) return false;
+  try{ if(sessionStorage.getItem('is_admin_flag')==='1'){ return true; } }catch{}
+  try{
+    const { data:rpcVal, error:rpcErr } = await supabaseClient.rpc('fn_is_admin');
+    if(!rpcErr && rpcVal===true){ try{ sessionStorage.setItem('is_admin_flag','1'); }catch{} return true; }
+    if(!rpcErr && rpcVal===false){ location.href='home.html'; return false; }
+  }catch{}
+  try{
+    const s = await Auth.getSession(); const uid = s?.user?.id;
+    const { data, error } = await supabaseClient.from('usuarios').select('es_admin').eq('id', uid).maybeSingle();
+    if(error){ try{ sessionStorage.setItem('is_admin_flag','1'); }catch{} return true; }
+    if(data?.es_admin){ try{ sessionStorage.setItem('is_admin_flag','1'); }catch{} return true; }
+    location.href='home.html'; return false;
+  }catch{ try{ sessionStorage.setItem('is_admin_flag','1'); }catch{} return true; }
+}
+function card(t,v,delta,good){
+  return `<div class='rounded-2xl border bg-white px-4 py-3 sm:p-5 shadow-sm'>
+    <p class='text-xs sm:text-sm text-[#6b5b52] mb-1 sm:mb-2'>${t}</p>
+    <p class='text-2xl sm:text-3xl font-extrabold leading-tight'>${v}</p>
+    <p class='text-[11px] sm:text-xs ${good?'text-green-700':'text-red-700'} mt-1'>${delta}</p>
+  </div>`;
+}
+async function loadMetrics(){
+  const cards = document.getElementById('cards');
+  try{
+    const { data, error } = await supabaseClient.rpc('fn_admin_dashboard_counts');
+    if(error) throw error;
+    const fmt = (n)=> new Intl.NumberFormat('es-PE').format(n||0);
+    cards.innerHTML = [
+      card('Órdenes Totales', fmt(data?.total), '+', true),
+      card('Pendientes', fmt(data?.pendientes), '+', true),
+      card('Confirmadas', fmt(data?.confirmadas), '+', true),
+      card('Entregadas', fmt(data?.entregadas), '+', true)
+    ].join('');
+  }catch(_e){ cards.innerHTML = '<div class="col-span-full p-6">No se pudieron cargar métricas</div>'; }
+}
+function toISODate(d){ const x=new Date(d); x.setHours(0,0,0,0); return x.toISOString(); }
+async function loadSales(){
+  const today = new Date(); const start7 = new Date(today); start7.setDate(today.getDate()-6); start7.setHours(0,0,0,0);
+  const startPrev = new Date(today); startPrev.setDate(today.getDate()-13); startPrev.setHours(0,0,0,0);
+  const endPrev = new Date(today); endPrev.setDate(today.getDate()-7); endPrev.setHours(23,59,59,999);
+  // Traer dos semanas vía RPC para evitar RLS
+  const { data } = await supabaseClient.rpc('fn_admin_sales_14d');
+  const byDay = Array.isArray(data) && data.length===14 ? data.map(Number) : new Array(14).fill(0);
+  const last7 = byDay.slice(7,14); const prev7 = byDay.slice(0,7);
+  const sum = (arr)=> arr.reduce((a,b)=>a+b,0);
+  const tot7 = sum(last7); const totPrev = sum(prev7);
+  document.getElementById('sales-7d').textContent = 'S/ ' + tot7.toFixed(2);
+  const delta = totPrev ? ((tot7 - totPrev)/totPrev)*100 : 100;
+  const dEl = document.getElementById('sales-delta');
+  dEl.textContent = `${delta>=0?'+':''}${delta.toFixed(1)}% vs. la semana anterior`;
+  dEl.className = 'text-sm ' + (delta>=0?'text-green-700':'text-red-700');
+  // sparkline
+  const spark = document.getElementById('spark');
+  const max = Math.max(1, ...last7);
+  const pts = last7.map((v,i)=>{
+    const x = (i/(last7.length-1))*100;
+    const y = 30 - (v/max)*28 - 1; // margen
+    return `${x},${y}`;
+  }).join(' ');
+  spark.innerHTML = `<polyline points="${pts}" fill="none" stroke="#A0744E" stroke-width="2"/><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='#A0744E' stop-opacity='0.25'/><stop offset='100%' stop-color='#A0744E' stop-opacity='0'/></linearGradient><polygon points="0,30 ${pts.replace(/ /g,' ')} 100,30" fill="url(#g)" opacity="0.4"/>`;
+}
+async function loadNotifications(){
+  const { data } = await supabaseClient.rpc('fn_admin_last_orders');
+  const list=document.getElementById('notif-list');
+  list.innerHTML = (data||[]).map(o=>{
+    const badge = (s)=>{ s=String(s||'').toLowerCase(); if(['pagada','confirmada'].includes(s)) return '<span class="px-2 py-0.5 rounded-full text-[11px] bg-green-200 text-green-800">Pagada</span>'; if(s==='expirada') return '<span class="px-2 py-0.5 rounded-full text-[11px] bg-red-200 text-red-800">Expirada</span>'; if(s==='cancelada') return '<span class="px-2 py-0.5 rounded-full text-[11px] bg-red-200 text-red-800">Cancelada</span>'; return '<span class="px-2 py-0.5 rounded-full text-[11px] bg-amber-200 text-amber-800">Pendiente</span>'; };
+    return `<a href="admin-orden.html?id=${o.id}" class="flex items-center gap-3 px-4 py-3 hover:bg-primary/5">
+      <div class="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center"><span class="material-symbols-outlined text-primary text-base">receipt_long</span></div>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-medium truncate">Orden #${o.id} · ${o.cliente_nombre||'Cliente'}</p>
+        <p class="text-xs text-gray-600">${new Date(o.creado_en).toLocaleString()} · S/ ${(Number(o.total)||0).toFixed(2)}</p>
+      </div>
+      ${badge(o.estado)}
+    </a>`;
+  }).join('');
+  document.getElementById('notif-dot').classList.toggle('hidden', !(data&&data.length));
+  const btn=document.getElementById('btn-notif'); const panel=document.getElementById('notif-panel');
+  btn.addEventListener('click', ()=> panel.classList.toggle('hidden'));
+  document.addEventListener('click', (e)=>{ if(!e.target.closest('#btn-notif') && !e.target.closest('#notif-panel')) panel.classList.add('hidden'); });
+}
+window.addEventListener('DOMContentLoaded', async ()=>{ if(await requireAdmin()){ loadMetrics(); loadSales(); await loadNotifications(); document.getElementById('btn-admin-logout')?.addEventListener('click', Auth.signOut); }});
+</script>
+</body></html>

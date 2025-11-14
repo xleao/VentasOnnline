@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Admin - Detalle de Orden</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{primary:"#6F5E53","background-light":"#F7F5F2","background-dark":"#211911","brand":"#A0744E"},fontFamily:{display:["Inter","sans-serif"]}}}}</script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script defer src="assets/app.js"></script>
+</head>
+<body data-admin-page class="bg-background-light dark:bg-background-dark font-display text-[#2b211b]">
+<div class="relative flex min-h-screen w-full flex-col">
+  <header class="w-full border-b border-primary/20 bg-white/80 backdrop-blur-sm">
+    <div class="max-w-6xl mx-auto h-16 flex items-center justify-between px-4">
+      <div class="flex items-center gap-3">
+        <div class="size-6 text-primary"><svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><path d="M36.7273 44C33.9891 44 31.6043 39.8386 30.3636 33.69C29.123 39.8386 26.7382 44 24 44C21.2618 44 18.877 39.8386 17.6364 33.69C16.3957 39.8386 14.0109 44 11.2727 44C7.25611 44 4 35.0457 4 24C4 12.9543 7.25611 4 11.2727 4C14.0109 4 16.3957 8.16144 17.6364 14.31C18.877 8.16144 21.2618 4 24 4C26.7382 4 29.123 8.16144 30.3636 14.31C31.6043 8.16144 33.9891 4 36.7273 4C40.7439 4 44 12.9543 44 24C44 35.0457 40.7439 44 36.7273 44Z" fill="currentColor"/></svg></div>
+        <h2 class="text-lg font-bold">Makitu Store Admin</h2>
+      </div>
+      <nav class="hidden md:flex items-center gap-6">
+        <a class="text-sm" href="admin-dashboard.html">Dashboard</a>
+        <a class="text-sm" href="admin-categorias.html">Categorías</a>
+        <a class="text-sm" href="admin-productos.html">Productos</a>
+        <a class="px-3 py-1.5 rounded-full bg-primary text-white text-sm font-bold" href="admin-ordenes.html">Órdenes</a>
+        <a class="text-sm" href="admin-usuarios.html">Usuarios</a>
+      </nav>
+      <div class="flex items-center gap-2 sm:gap-3 relative">
+        <button id="btn-notif" class="relative h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center rounded-full hover:bg-primary/10"><span class="material-symbols-outlined text-base sm:text-[20px]">notifications</span></button>
+        <button id="btn-admin-logout" class="min-w-[110px] sm:min-w-[120px] items-center justify-center rounded-full h-9 sm:h-10 px-3 sm:px-4 border bg-white text-xs sm:text-sm font-bold">Cerrar sesión</button>
+      </div>
+    </div>
+    <nav class="md:hidden border-t border-primary/10 bg-white/80">
+      <div class="max-w-6xl mx-auto grid grid-cols-5 gap-2 px-4 py-2 text-[11px] font-medium text-[#6b5b52]">
+        <a href="admin-dashboard.html" class="flex flex-col items-center gap-0.5">
+          <span class="material-symbols-outlined text-base">leaderboard</span>
+          <span>Dashboard</span>
+        </a>
+        <a href="admin-categorias.html" class="flex flex-col items-center gap-0.5">
+          <span class="material-symbols-outlined text-base">category</span>
+          <span>Categorías</span>
+        </a>
+        <a href="admin-productos.html" class="flex flex-col items-center gap-0.5">
+          <span class="material-symbols-outlined text-base">inventory_2</span>
+          <span>Productos</span>
+        </a>
+        <a href="admin-ordenes.html" class="flex flex-col items-center gap-0.5 text-primary">
+          <span class="material-symbols-outlined text-base">receipt_long</span>
+          <span>Órdenes</span>
+        </a>
+        <a href="admin-usuarios.html" class="flex flex-col items-center gap-0.5">
+          <span class="material-symbols-outlined text-base">group</span>
+          <span>Usuarios</span>
+        </a>
+      </div>
+    </nav>
+  </header>
+  <main class="container mx-auto px-4 py-8">
+    <div class="max-w-6xl mx-auto">
+      <h1 id="title" class="text-3xl font-black mb-4">Detalle de Orden</h1>
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3 mb-4 text-xs sm:text-sm">
+        <button id="mark-confirm" class="h-9 sm:h-10 px-3 sm:px-4 rounded-full border text-blue-700 border-blue-300">Confirmar</button>
+        <button id="mark-deliver" class="h-9 sm:h-10 px-3 sm:px-4 rounded-full border text-green-700 border-green-300">Entregado</button>
+        <button id="mark-exp" class="h-9 sm:h-10 px-3 sm:px-4 rounded-full bg-amber-600 text-white">Marcar expirada</button>
+      </div>
+      <div class="rounded-2xl border bg-white p-4 shadow-sm mb-6">
+        <div id="meta" class="grid grid-cols-1 md:grid-cols-4 gap-4"></div>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 rounded-2xl border bg-white p-0 shadow-sm overflow-hidden">
+          <div class="px-4 py-3 border-b"><h3 class="font-bold">Items en la Orden</h3></div>
+          <div class="grid grid-cols-5 gap-2 px-4 py-2 bg-gray-50 text-sm font-medium"><span class="col-span-2">Producto</span><span>SKU</span><span>Cantidad</span><span class="text-right pr-2">Subtotal</span></div>
+          <div id="items"></div>
+          <div class="px-4 py-3 border-t text-right font-bold" id="total-row"></div>
+        </div>
+        <div class="rounded-2xl border bg-white p-4 shadow-sm">
+          <h3 class="font-bold mb-3">Cliente</h3>
+          <div id="cliente" class="space-y-2"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+<script>
+async function requireAdmin(){
+  const ok = await Auth.requireAuth(); if(!ok) return false;
+  try{ if(sessionStorage.getItem('is_admin_flag')==='1'){ return true; } }catch{}
+  try{
+    const { data:rpcVal, error:rpcErr } = await supabaseClient.rpc('fn_is_admin');
+    if(!rpcErr && rpcVal===true){ try{ sessionStorage.setItem('is_admin_flag','1'); }catch{} return true; }
+    if(!rpcErr && rpcVal===false){ location.href='home.html'; return false; }
+  }catch{}
+  try{
+    const s=await Auth.getSession(); const uid=s?.user?.id;
+    const { data, error } = await supabaseClient.from('usuarios').select('es_admin').eq('id',uid).maybeSingle();
+    if(error){ try{ sessionStorage.setItem('is_admin_flag','1'); }catch{} return true; }
+    if(data?.es_admin){ try{ sessionStorage.setItem('is_admin_flag','1'); }catch{} return true; }
+    location.href='home.html'; return false;
+  }catch{ try{ sessionStorage.setItem('is_admin_flag','1'); }catch{} return true; }
+}
+function qs(k){ try{ return new URL(location.href).searchParams.get(k) }catch{ return null } }
+function s(n){ return `S/ ${(n||0).toFixed(2)}` }
+let O=null;
+async function load(){
+  const id = Number(qs('id'));
+  const { data } = await supabaseClient.rpc('fn_admin_order_detail', { p_id: id });
+  const o = Array.isArray(data) ? data[0] : data;
+  O=o; if(!o){ document.body.innerHTML='Orden no encontrada'; return; }
+  document.getElementById('title').textContent = `Detalle de Orden #${o.id}`;
+  // meta cards
+  const badge = (st)=>{ st=String(st||'').toLowerCase(); if(st==='confirmada') return '<span class="px-2 py-1 rounded-full text-xs bg-blue-200 text-blue-800">Confirmada</span>'; if(st==='entregada') return '<span class="px-2 py-1 rounded-full text-xs bg-green-200 text-green-800">Entregada</span>'; if(st==='expirada') return '<span class="px-2 py-1 rounded-full text-xs bg-red-200 text-red-800">Expirada</span>'; if(st==='cancelada') return '<span class="px-2 py-1 rounded-full text-xs bg-red-200 text-red-800">Cancelada</span>'; return '<span class="px-2 py-1 rounded-full text-xs bg-amber-200 text-amber-800">Pendiente</span>'; };
+  document.getElementById('meta').innerHTML = [
+    `<div><p class='text-xs text-gray-500 mb-1'>ID de la Orden</p><p class='font-bold'>#${o.id}</p></div>`,
+    `<div><p class='text-xs text-gray-500 mb-1'>Fecha de Creación</p><p class='font-bold'>${new Date(o.creado_en).toLocaleDateString()}</p></div>`,
+    `<div><p class='text-xs text-gray-500 mb-1'>Monto Total</p><p class='font-bold'>${s(o.total)}</p></div>`,
+    `<div><p class='text-xs text-gray-500 mb-1'>Estado</p><p>${badge(o.estado)}</p></div>`
+  ].map(x=>`<div class='rounded-xl border bg-white p-4'>${x}</div>`).join('');
+  let { data:items } = await supabaseClient.rpc('fn_admin_order_items', { p_orden_id: id });
+  // Fallback: si el RPC no devuelve nada, leer directamente orden_items + productos
+  if(!items || items.length===0){
+    try{
+      const { data:raw } = await supabaseClient
+        .from('orden_items')
+        .select('*, productos(imagen_url,nombre)')
+        .eq('orden_id', id)
+        .order('id', { ascending:true });
+      items = (raw||[]).map(it=>({
+        ...it,
+        imagen_url: it.imagen_url || it.productos?.imagen_url || '',
+        producto_nombre: it.producto_nombre || it.productos?.nombre || '',
+      }));
+    }catch{ items = items || []; }
+  }
+  const itemsEl = document.getElementById('items');
+  if(!items || items.length===0){
+    itemsEl.innerHTML = `<div class='px-4 py-4 text-sm text-gray-600'>Sin productos en esta orden.</div>`;
+  } else {
+    itemsEl.innerHTML = items.map(it=>`<div class='grid grid-cols-5 items-center gap-2 px-4 py-3'>
+      <div class='col-span-2 flex items-center gap-3'>
+        <button type='button' class='w-10 h-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-primary/60' data-img-full='${it.imagen_url||''}'>
+          <img src='${it.imagen_url||''}' class='w-full h-full object-cover'/>
+        </button>
+        <div>
+          <p class='font-medium'>${it.producto_nombre||('Producto '+it.producto_id)}</p>
+          <p class='text-xs text-gray-500'>${it.subcategoria_nombre||''}</p>
+        </div>
+      </div>
+      <div class='text-sm text-gray-600'>${it.sku||''}</div>
+      <div>${it.cantidad||0}</div>
+      <div class='text-right pr-2 font-medium'>${s(Number(it.subtotal)|| (Number(it.precio_unitario)||0)*(it.cantidad||0))}</div>
+    </div>`).join('');
+  }
+  const u=o.usuarios||{}; document.getElementById('cliente').innerHTML = `
+    <p class='font-medium'>${u.nombre||''}</p>
+    <p class='text-xs text-gray-500 break-all'>${u.email||''}</p>
+    <div class='h-px bg-gray-200 my-2'></div>
+    <p class='text-sm text-gray-700 flex items-center gap-2'><span class='material-symbols-outlined text-base'>call</span>${u.telefono||''}</p>`;
+  const total = (items||[]).reduce((a,b)=> a + (Number(b.subtotal) || (Number(b.precio_unitario)||0)*(b.cantidad||0)), 0);
+  document.getElementById('total-row').textContent = 'Total: ' + s(total);
+}
+async function setEstado(est, btn){
+  if(!O) return;
+  try{
+    if(btn){ btn.disabled=true; btn.classList.add('opacity-60'); }
+    if(est==='cancelada'){
+      const { error } = await supabaseClient.rpc('fn_cancel_my_order', { p_orden_id: O.id });
+      if(error){ throw error; }
+    } else {
+      const { error } = await supabaseClient.rpc('fn_admin_update_order_status', { p_id: O.id, p_estado: est });
+      if(error){ throw error; }
+    }
+    await load();
+  }catch(err){ alert(err?.message||'No se pudo actualizar el estado'); }
+  finally{ if(btn){ btn.disabled=false; btn.classList.remove('opacity-60'); } }
+}
+window.addEventListener('DOMContentLoaded', async()=>{
+  if(await requireAdmin()){
+    await load();
+    const bC=document.getElementById('mark-confirm');
+    const bD=document.getElementById('mark-deliver');
+    const bE=document.getElementById('mark-exp');
+    if(bC) bC.addEventListener('click', (e)=>setEstado('confirmada', e.currentTarget));
+    if(bD) bD.addEventListener('click', (e)=>setEstado('entregada', e.currentTarget));
+    if(bE) bE.addEventListener('click', (e)=>setEstado('expirada', e.currentTarget));
+    document.getElementById('btn-admin-logout')?.addEventListener('click', Auth.signOut);
+
+    // Lightbox para imagen de producto
+    const overlay=document.getElementById('img-lightbox');
+    const img=document.getElementById('img-lightbox-img');
+    const closeBtn=document.getElementById('img-lightbox-close');
+    function hideLightbox(){
+      if(overlay){ overlay.classList.add('hidden'); }
+      if(img){ img.removeAttribute('src'); }
+      document.body.classList.remove('overflow-hidden');
+    }
+    overlay?.addEventListener('click', (e)=>{ if(e.target===overlay){ hideLightbox(); }});
+    closeBtn?.addEventListener('click', (e)=>{ e.preventDefault(); hideLightbox(); });
+
+    // Delegar clic en imágenes dentro de la lista de items
+    const itemsEl=document.getElementById('items');
+    itemsEl?.addEventListener('click', (e)=>{
+      const btn=e.target.closest('[data-img-full]');
+      if(!btn) return;
+      const url=btn.getAttribute('data-img-full');
+      if(!url || !overlay || !img) return;
+      img.src=url;
+      overlay.classList.remove('hidden');
+      document.body.classList.add('overflow-hidden');
+    });
+  }
+});
+</script>
+<!-- Lightbox para imagen de producto en la orden -->
+<div id="img-lightbox" class="hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+  <div class="relative max-w-3xl max-h-[90vh] w-full px-4">
+    <button id="img-lightbox-close" class="absolute -top-3 right-4 h-8 w-8 rounded-full bg-white/90 hover:bg-white shadow flex items-center justify-center text-gray-700">
+      <span class="material-symbols-outlined text-base">close</span>
+    </button>
+    <img id="img-lightbox-img" alt="Imagen de producto" class="w-full max-h-[90vh] rounded-2xl bg-white shadow-2xl border object-contain"/>
+  </div>
+</div>
+</body></html>

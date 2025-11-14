@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Mis Órdenes - Makitu Store</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{primary:"#6F5E53","background-light":"#F7F5F2","background-dark":"#211911","text-main":"#333333"},fontFamily:{display:["Inter","sans-serif"]}}}}</script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script defer src="assets/app.js"></script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-text-main dark:text-background-light">
+<div class="relative flex min-h-screen w-full flex-col">
+<div class="container mx-auto px-4 sm:px-6 lg:px-8">
+<div class="max-w-3xl mx-auto">
+<h2 class="mt-4 sm:mt-6 mb-6 text-4xl font-black tracking-tight">Mis Órdenes</h2>
+<div class="mb-4 flex flex-wrap items-center gap-2">
+  <button data-filter="all" class="px-3 h-9 rounded-full border bg-white text-sm">Todos</button>
+  <button data-filter="pendiente" class="px-3 h-9 rounded-full border bg-white text-sm">Pendiente</button>
+  <button data-filter="confirmado" class="px-3 h-9 rounded-full border bg-white text-sm">Confirmado</button>
+  <button data-filter="entregado" class="px-3 h-9 rounded-full border bg-white text-sm">Entregado</button>
+  <button data-filter="expirada" class="px-3 h-9 rounded-full border bg-white text-sm">Expirada</button>
+</div>
+<div id="orders" class="grid grid-cols-1 gap-4"></div>
+<div id="orders-pager" class="mt-6 flex items-center justify-center gap-2"></div>
+</div>
+</div>
+<script>
+function s(n){ return `S/ ${(n||0).toFixed(2)}` }
+function fmt(d){ try{ return new Date(d).toLocaleString(); }catch{ return '-' } }
+async function loadMyOrders(){
+  const ok = await Auth.requireAuth();
+  if(!ok) return;
+  const ssi = await Auth.getSession();
+  const uid = ssi?.user?.id;
+  const grid = document.getElementById('orders');
+  const { data, error } = await supabaseClient
+    .from('ordenes')
+    .select('*')
+    .eq('usuario_id', uid)
+    .order('id', { ascending:false });
+  if(error){ grid.innerHTML = `<div class='col-span-full p-6 text-center'>No se pudieron cargar tus órdenes</div>`; return; }
+  if(!data || data.length===0){ grid.innerHTML = `<div class='col-span-full p-6 text-center'>Aún no tienes órdenes</div>`; return; }
+  const now = Date.now();
+  function estadoUI(o){
+    const vencio = o.metodo_pago === 'YAPE' && o.vence_en && (new Date(o.vence_en).getTime() < Date.now());
+    const est = (o.estado||'').toLowerCase();
+    if(est === 'pagada' || est === 'confirmada') return { text:'Confirmado', cls:'bg-green-200 text-green-800' };
+    if(est.includes('entreg')) return { text:'Entregado', cls:'bg-green-200 text-green-800' };
+    if(est === 'expirada' || vencio) return { text:'Expirada', cls:'bg-red-200 text-red-800' };
+    return { text:'Pendiente', cls:'bg-amber-200 text-amber-800' };
+  }
+  function deriveStatus(o){
+    const vencio = o.metodo_pago === 'YAPE' && o.vence_en && (new Date(o.vence_en).getTime() < Date.now());
+    const est = (o.estado||'').toLowerCase();
+    if(est === 'expirada' || vencio) return 'expirada';
+    if(est.includes('entreg')) return 'entregado';
+    if(est === 'pagada' || est === 'confirmada') return 'confirmado';
+    return 'pendiente';
+  }
+  function fechaCorta(d){ try{ return new Date(d).toLocaleDateString(undefined, { day:'2-digit', month:'long', year:'numeric' }); }catch{ return '-' } }
+  function isPendingYape(o){
+    const est = (o.estado||'').toLowerCase();
+    const vencio = o.metodo_pago === 'YAPE' && o.vence_en && (new Date(o.vence_en).getTime() < Date.now());
+    return o.metodo_pago === 'YAPE' && !vencio && !(est==='pagada' || est==='confirmada' || est==='expirada' || est==='cancelada');
+  }
+  grid.className = 'flex flex-col gap-4';
+
+  // Estado de UI: filtro+paginas
+  const pager = document.getElementById('orders-pager');
+  const filterBtns = Array.from(document.querySelectorAll('[data-filter]'));
+  let state = { filter:'all', page:1, size:5, list:data };
+
+  function applyFilter(){
+    let arr = state.list;
+    if(state.filter !== 'all') arr = arr.filter(o=> deriveStatus(o) === state.filter);
+    return arr;
+  }
+  function render(){
+    const arr = applyFilter();
+    const totalPages = Math.max(1, Math.ceil(arr.length / state.size));
+    state.page = Math.min(state.page, totalPages);
+    const start = (state.page-1) * state.size;
+    const pageItems = arr.slice(start, start + state.size);
+
+    grid.innerHTML = pageItems.map(o=>{
+      const st = estadoUI(o);
+      const fecha = fechaCorta(o.creado_en || o.created_at);
+      const total = s(Number(o.total)||0);
+      const mp = (o.metodo_pago === 'EFECTIVO') ? 'Efectivo' : 'Yape';
+      const mpCls = (o.metodo_pago === 'EFECTIVO') ? 'bg-gray-200 text-gray-800' : 'bg-purple-200 text-purple-800';
+      const showTimer = isPendingYape(o) && o.vence_en;
+      const endMs = showTimer ? new Date(o.vence_en).getTime() : null;
+      return `
+      <a href="orden.html?id=${o.id}" class="block rounded-2xl bg-white border shadow-sm hover:shadow-md transition-shadow">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 px-4 py-4">
+          <div class="flex items-center gap-3 sm:gap-4">
+            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary"><span class="material-symbols-outlined">event_note</span></div>
+            <div class="flex flex-col">
+              <div class="flex items-center gap-2"><p class="text-base font-bold">Orden #${o.id}</p><span class="text-[11px] px-2 py-[2px] rounded-full ${mpCls}">${mp}</span></div>
+              <p class="text-sm text-gray-600">Fecha: ${fecha}</p>
+              ${showTimer ? `<p class=\"text-xs text-amber-700\">Tiempo restante: <span class=\"font-semibold ord-eta\" data-end=\"${endMs}\"></span></p>` : ''}
+            </div>
+          </div>
+          <div class="flex items-center justify-between sm:justify-end gap-3 md:gap-4 w-full sm:w-auto pt-1 sm:pt-0">
+            <p class="text-base font-bold whitespace-nowrap min-w-[90px] text-right">${total}</p>
+            <span class="text-sm px-3 py-1 rounded-full ${st.cls}">${st.text}</span>
+          </div>
+        </div>
+      </a>`;
+    }).join('');
+
+    // Paginador
+    pager.innerHTML = '';
+    const prev = document.createElement('button'); prev.textContent='Anterior'; prev.className='px-3 h-9 rounded-full border bg-white text-sm'; prev.disabled = state.page<=1; prev.addEventListener('click',()=>{ state.page--; render(); });
+    const info = document.createElement('span'); info.className='text-sm px-2'; info.textContent = `Página ${state.page} de ${totalPages}`;
+    const next = document.createElement('button'); next.textContent='Siguiente'; next.className='px-3 h-9 rounded-full border bg-white text-sm'; next.disabled = state.page>=totalPages; next.addEventListener('click',()=>{ state.page++; render(); });
+    pager.append(prev, info, next);
+
+    // Timers
+    function fmtLeft(ms){ if(ms<=0) return '00:00'; const s=Math.floor(ms/1000), m=Math.floor(s/60)%60, h=Math.floor(s/3600); const mm=String(m).padStart(2,'0'), ss=String(s%60).padStart(2,'0'); return h>0?`${h}h ${mm}m ${ss}s`:`${mm}m ${ss}s`; }
+    function tick(){ const now=Date.now(); document.querySelectorAll('.ord-eta').forEach(el=>{ const end=Number(el.getAttribute('data-end'))||0; el.textContent = fmtLeft(end-now); }); }
+    if(document.querySelector('.ord-eta')){ tick(); window._ordListInt&&clearInterval(window._ordListInt); window._ordListInt=setInterval(tick,1000); }
+  }
+
+  // Eventos de filtro
+  filterBtns.forEach(b=>{
+    b.addEventListener('click', ()=>{
+      filterBtns.forEach(x=>x.classList.remove('bg-primary/10'));
+      b.classList.add('bg-primary/10');
+      state.filter = b.getAttribute('data-filter');
+      state.page = 1;
+      render();
+    });
+  });
+
+  render();
+}
+window.addEventListener('DOMContentLoaded', loadMyOrders);
+</script>
+</body></html>

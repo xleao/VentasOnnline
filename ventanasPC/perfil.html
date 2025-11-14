@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Perfil - Makitu Store</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{primary:"#6F5E53","background-light":"#F7F5F2","background-dark":"#211911","text-main":"#333333"},fontFamily:{display:["Inter","sans-serif"]}}}}</script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script defer src="assets/app.js"></script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-text-main dark:text-background-light">
+<div class="relative flex min-h-screen w-full flex-col">
+<main class="max-w-2xl mx-auto px-4 py-10">
+  <h1 class="text-4xl font-black mb-6 text-brand-text-primary">Mi Perfil</h1>
+  <div class="bg-white dark:bg-background-dark/50 border rounded-2xl shadow-sm p-6">
+    <div class="grid grid-cols-1 gap-5">
+      <label class="block">
+        <span class="block text-sm font-medium mb-2">Email</span>
+        <div class="relative">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">mail</span>
+          <input id="pf-email" class="w-full border rounded-xl h-12 pl-10 pr-3 bg-gray-100 text-gray-700" value="" readonly>
+        </div>
+      </label>
+      <label class="block">
+        <span class="block text-sm font-medium mb-2">Nombre</span>
+        <div class="relative">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">person</span>
+          <input id="pf-nombre" class="w-full border rounded-xl h-12 pl-10 pr-3" value="" placeholder="Tu nombre"/>
+        </div>
+      </label>
+      <label class="block">
+        <span class="block text-sm font-medium mb-2">Teléfono</span>
+        <div class="relative">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">call</span>
+          <input id="pf-telefono" class="w-full border rounded-xl h-12 pl-10 pr-3" value="" placeholder="Ej: 987654321"/>
+        </div>
+      </label>
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between pt-3 gap-3 sm:gap-4">
+        <p id="pf-msg" class="text-sm text-green-700 order-2 sm:order-1"></p>
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 order-1 sm:order-2 w-full sm:w-auto">
+          <button id="btn-logout-local" class="hidden h-11 px-5 rounded-xl border-2 border-red-400 text-red-600 font-bold bg-white w-full sm:w-auto">Cerrar sesión</button>
+          <button id="pf-save" class="h-11 px-5 rounded-xl bg-[#A0744E] text-white font-bold w-full sm:w-auto">Guardar cambios</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="text-sm text-gray-500 mt-3">Tu información solo será usada para tu experiencia de compra.</p>
+</main>
+</div>
+<script>
+async function initPerfil(){
+  const ok = await Auth.requireAuth();
+  if(!ok) return;
+  const s = await Auth.getSession();
+  const user = s?.user;
+  const emailEl = document.getElementById('pf-email');
+  const nombreEl = document.getElementById('pf-nombre');
+  const telEl = document.getElementById('pf-telefono');
+  const msgEl = document.getElementById('pf-msg');
+  const btnLogout = document.getElementById('btn-logout-local');
+  if(user){ emailEl.value = user.email || ''; btnLogout.classList.remove('hidden'); btnLogout.addEventListener('click', Auth.signOut); }
+  // cargar perfil desde tabla usuarios
+  try{
+    const { data } = await supabaseClient.from('usuarios').select('*').eq('id', user.id).maybeSingle();
+    if(data){ nombreEl.value = data.nombre || ''; telEl.value = data.telefono || ''; }
+  }catch{}
+  document.getElementById('pf-save').addEventListener('click', async ()=>{
+    msgEl.textContent='';
+    try{
+      await supabaseClient.from('usuarios').upsert({ id: user.id, nombre: nombreEl.value.trim() || null, telefono: telEl.value.trim() || null }, { onConflict: 'id' });
+      msgEl.textContent = 'Guardado correctamente';
+      msgEl.classList.remove('text-red-600');
+      msgEl.classList.add('text-green-700');
+    }catch(err){
+      msgEl.textContent = err.message || 'Error al guardar';
+      msgEl.classList.remove('text-green-700');
+      msgEl.classList.add('text-red-600');
+    }
+  });
+}
+window.addEventListener('DOMContentLoaded', initPerfil);
+</script>
+</body></html>

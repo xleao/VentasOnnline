@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Categoría - Makitu Store</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<style>.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}</style>
+<script>tailwind.config={darkMode:"class",theme:{extend:{colors:{primary:"#e28c36","background-light":"#f8f7f6","background-dark":"#211911","text-dark-gray":"#4A4A4A"},fontFamily:{display:["Inter","sans-serif"]}}}}</script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script defer src="assets/app.js"></script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-text-dark-gray dark:text-background-light">
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+<main class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="flex flex-col gap-4">
+<div class="flex flex-wrap gap-2"><a class="text-gray-500 text-sm font-medium" href="home.html">Inicio</a><span class="text-gray-500 text-sm font-medium">/</span><a class="text-gray-500 text-sm font-medium" href="categorias.html">Categorías</a><span class="text-gray-500 text-sm font-medium">/</span><span id="cat-name" class="text-primary text-sm font-medium">Categoría</span></div>
+<div class="flex flex-wrap justify-between gap-3"><p id="cat-title" class="text-primary text-4xl font-black">Categoría</p></div>
+</div>
+<div id="subcats" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 mt-6"></div>
+</main>
+</div>
+<script>
+function q(k){return new URL(location.href).searchParams.get(k)}
+async function load(){
+  if(!window.supabaseClient){return}
+  const id = Number(q('id'));
+  if(!id){ document.getElementById('subcats').innerHTML = `<div class='col-span-full text-center'>Falta parámetro id</div>`; return; }
+  const { data:cat } = await supabaseClient.from('categorias').select('*').eq('id', id).single();
+  if(cat){ document.getElementById('cat-name').textContent = cat.nombre; document.getElementById('cat-title').textContent = cat.nombre; }
+  const { data, error } = await supabaseClient
+    .from('categorias')
+    .select('*')
+    .eq('parent_id', id)
+    .eq('activa', true)
+    .order('orden', { ascending: true, nullsFirst: false })
+    .order('id', { ascending: true });
+  const grid = document.getElementById('subcats');
+  if(error){ grid.innerHTML = `<div class='col-span-full text-center'>Error cargando subcategorías</div>`; return; }
+  if(!data || data.length===0){ grid.innerHTML = `<div class='col-span-full text-center'>No hay subcategorías</div>`; return; }
+  grid.innerHTML = data.map(sc=>`
+    <a href="subcategoria.html?id=${sc.id}" class="flex flex-col rounded-xl overflow-hidden bg-white border shadow-sm hover:shadow-lg transition-shadow group">
+      <div class="relative w-full aspect-square overflow-hidden">
+        <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" src="${sc.imagen_url || 'https://images.unsplash.com/photo-1520975922284-9d27911b2a71?auto=format&fit=crop&w=800&q=60'}"/>
+      </div>
+      <div class="flex flex-col p-4 gap-1"><h3 class="font-bold text-primary text-base">${sc.nombre}</h3></div>
+    </a>`).join('');
+}
+window.addEventListener('DOMContentLoaded', load);
+</script>
+</body></html>

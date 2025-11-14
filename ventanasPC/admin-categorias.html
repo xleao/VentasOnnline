@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Admin - Categorías</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{primary:"#6F5E53","background-light":"#F7F5F2","background-dark":"#211911","brand":"#A0744E"},fontFamily:{display:["Inter","sans-serif"]}}}}</script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script defer src="assets/app.js"></script>
+</head>
+<body data-admin-page class="bg-background-light dark:bg-background-dark font-display text-[#2b211b]">
+<div class="relative flex min-h-screen w-full flex-col">
+  <header class="w-full border-b border-primary/20 bg-white/80 backdrop-blur-sm">
+    <div class="max-w-6xl mx-auto h-16 flex items-center justify-between px-4">
+      <div class="flex items-center gap-3">
+        <div class="size-6 text-primary"><svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><path d="M36.7273 44C33.9891 44 31.6043 39.8386 30.3636 33.69C29.123 39.8386 26.7382 44 24 44C21.2618 44 18.877 39.8386 17.6364 33.69C16.3957 39.8386 14.0109 44 11.2727 44C7.25611 44 4 35.0457 4 24C4 12.9543 7.25611 4 11.2727 4C14.0109 4 16.3957 8.16144 17.6364 14.31C18.877 8.16144 21.2618 4 24 4C26.7382 4 29.123 8.16144 30.3636 14.31C31.6043 8.16144 33.9891 4 36.7273 4C40.7439 4 44 12.9543 44 24C44 35.0457 40.7439 44 36.7273 44Z" fill="currentColor"/></svg></div>
+        <h2 class="text-lg font-bold">Makitu Store</h2>
+      </div>
+      <nav class="hidden md:flex items-center gap-6">
+        <a class="text-sm" href="admin-dashboard.html">Dashboard</a>
+        <a class="px-3 py-1.5 rounded-full bg-primary text-white text-sm font-bold" href="admin-categorias.html">Categorías</a>
+        <a class="text-sm" href="admin-productos.html">Productos</a>
+        <a class="text-sm" href="admin-ordenes.html">Órdenes</a>
+        <a class="text-sm" href="admin-usuarios.html">Usuarios</a>
+      </nav>
+      <div class="flex items-center gap-2 sm:gap-3 relative">
+        <button id="btn-notif" class="relative h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center rounded-full hover:bg-primary/10"><span class="material-symbols-outlined text-base sm:text-[20px]">notifications</span></button>
+        <button id="btn-admin-logout" class="min-w-[110px] sm:min-w-[120px] items-center justify-center rounded-full h-9 sm:h-10 px-3 sm:px-4 border bg-white text-xs sm:text-sm font-bold">Cerrar sesión</button>
+      </div>
+    </div>
+    <nav class="md:hidden border-t border-primary/10 bg-white/80">
+      <div class="max-w-6xl mx-auto grid grid-cols-5 gap-2 px-4 py-2 text-[11px] font-medium text-[#6b5b52]">
+        <a href="admin-dashboard.html" class="flex flex-col items-center gap-0.5">
+          <span class="material-symbols-outlined text-base">leaderboard</span>
+          <span>Dashboard</span>
+        </a>
+        <a href="admin-categorias.html" class="flex flex-col items-center gap-0.5 text-primary">
+          <span class="material-symbols-outlined text-base">category</span>
+          <span>Categorías</span>
+        </a>
+        <a href="admin-productos.html" class="flex flex-col items-center gap-0.5">
+          <span class="material-symbols-outlined text-base">inventory_2</span>
+          <span>Productos</span>
+        </a>
+        <a href="admin-ordenes.html" class="flex flex-col items-center gap-0.5">
+          <span class="material-symbols-outlined text-base">receipt_long</span>
+          <span>Órdenes</span>
+        </a>
+        <a href="admin-usuarios.html" class="flex flex-col items-center gap-0.5">
+          <span class="material-symbols-outlined text-base">group</span>
+          <span>Usuarios</span>
+        </a>
+      </div>
+    </nav>
+  </header>
+  <main class="container mx-auto px-4 py-8">
+    <div class="max-w-6xl mx-auto">
+      <p class="text-sm text-gray-500 mb-2">Gestión / Categorías</p>
+      <h1 class="text-3xl font-black mb-2">Gestión de Categorías</h1>
+      <p class="text-sm text-[#6b5b52] mb-6">Administra las categorías principales y sus subcategorías.</p>
+      <div class="flex justify-end mb-4">
+        <button id="btn-new-cat" class="h-9 sm:h-10 px-4 rounded-full bg-primary text-white text-xs sm:text-sm font-bold">+ Nueva Categoría Principal</button>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="rounded-2xl border bg-white p-4 shadow-sm">
+          <div class="font-bold mb-3">Categorías Principales</div>
+          <div class="relative mb-3">
+            <input id="cat-search" class="w-full h-10 rounded-full border pl-10 pr-4 text-sm" placeholder="Buscar categorías..."/>
+            <span class="material-symbols-outlined absolute left-3 top-2.5 text-gray-500">search</span>
+          </div>
+          <div id="cat-list" class="flex flex-col gap-2"></div>
+        </div>
+        <div class="rounded-2xl border bg-white p-4 shadow-sm lg:col-span-2">
+          <div class="flex items-center justify-between mb-3">
+            <p id="sub-title" class="font-bold">Subcategorías</p>
+            <div class="flex items-center gap-2">
+              <button id="btn-edit-cat" onclick="onEditCat()" class="h-9 px-3 rounded-full border text-xs sm:text-sm font-bold">Editar Categoría</button>
+              <button id="btn-new-sub" onclick="onNewSub()" class="h-9 px-3 rounded-full bg-primary/20 text-primary text-xs sm:text-sm font-bold">+ Nueva Subcategoría</button>
+            </div>
+          </div>
+          <div class="rounded-xl overflow-hidden border">
+            <div class="grid grid-cols-6 gap-2 px-3 py-2 bg-gray-50 text-sm font-medium"><span class="col-span-2">Nombre</span><span>Slug</span><span>Orden</span><span>Estado</span><span>Acciones</span></div>
+            <div id="sub-list" class="divide-y"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+<!-- Modal Nueva Categoría Principal -->
+<div id="cat-modal" class="hidden fixed inset-0 z-50">
+  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+  <div class="absolute inset-0 flex items-start justify-center p-4 overflow-y-auto">
+    <div class="w-full max-w-xl rounded-2xl bg-white shadow-lg border mt-10 mb-10">
+      <div class="px-5 py-4 border-b flex items-center justify-between">
+        <h3 class="font-bold">Nueva Categoría Principal</h3>
+        <button id="catm-close" class="h-8 w-8 rounded-full hover:bg-gray-100 flex items-center justify-center"><span class="material-symbols-outlined">close</span></button>
+      </div>
+      <div class="p-5 space-y-3">
+        <label class="text-sm">Imagen (opcional)
+          <input id="catm-file" type="file" accept="image/*" class="mt-1 w-full h-10 rounded-lg border px-3 bg-white" />
+        </label>
+        <label class="text-sm">Nombre
+          <input id="catm-nombre" class="mt-1 w-full h-10 rounded-lg border px-3" placeholder="Ej: Accesorios"/>
+        </label>
+        <label class="text-sm">Slug
+          <input id="catm-slug" class="mt-1 w-full h-10 rounded-lg border px-3" placeholder="accesorios"/>
+        </label>
+        <label class="text-sm">Descripción
+          <textarea id="catm-desc" class="mt-1 w-full rounded-lg border px-3 h-24" placeholder="Describe esta categoría..."></textarea>
+        </label>
+        <label class="text-sm inline-flex items-center gap-2"><input id="catm-activa" type="checkbox" checked/> Activa</label>
+      </div>
+      <div class="px-5 py-4 border-t flex items-center justify-end gap-3">
+        <button id="catm-cancel" class="h-10 px-4 rounded-lg border">Cancelar</button>
+        <button id="catm-save" class="h-10 px-4 rounded-lg bg-primary text-white font-bold">Guardar</button>
+      </div>
+    </div>
+  </div>
+  
+</div>
+<!-- Modal Editar Categoría Principal -->
+<div id="cat-edit-modal" class="hidden fixed inset-0 z-50">
+  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm z-10"></div>
+  <div class="absolute inset-0 flex items-start justify-center p-4 z-20 overflow-y-auto">
+    <div class="w-full max-w-xl rounded-2xl bg-white shadow-lg border mt-10 mb-10">
+      <div class="px-5 py-4 border-b flex items-center justify-between">
+        <h3 class="font-bold">Editar Categoría Principal</h3>
+        <button id="cate-close" onclick="closeEditCatModal()" class="h-8 w-8 rounded-full hover:bg-gray-100 flex items-center justify-center"><span class="material-symbols-outlined">close</span></button>
+      </div>
+      <div class="p-5 space-y-3">
+        <label class="text-sm">Imagen (opcional)
+          <input id="cate-file" type="file" accept="image/*" class="mt-1 w-full h-10 rounded-lg border px-3 bg-white" />
+        </label>
+        <div id="cate-prev-wrap" class="hidden">
+          <img id="cate-preview" alt="Vista previa" class="mt-2 max-h-40 rounded-lg border" />
+          <div class="mt-2">
+            <button id="cate-remove-img" type="button" class="h-8 px-3 rounded-md border text-sm">Quitar imagen</button>
+          </div>
+        </div>
+        <label class="text-sm">Nombre
+          <input id="cate-nombre" class="mt-1 w-full h-10 rounded-lg border px-3"/>
+        </label>
+        <label class="text-sm">Slug
+          <input id="cate-slug" class="mt-1 w-full h-10 rounded-lg border px-3"/>
+        </label>
+        <label class="text-sm">Descripción
+          <textarea id="cate-desc" class="mt-1 w-full rounded-lg border px-3 h-24"></textarea>
+        </label>
+        <label class="text-sm inline-flex items-center gap-2"><input id="cate-activa" type="checkbox"/> Activa</label>
+      </div>
+      <div class="px-5 py-4 border-t flex items-center justify-end gap-3">
+        <button id="cate-cancel" onclick="closeEditCatModal()" class="h-10 px-4 rounded-lg border">Cancelar</button>
+        <button id="cate-save" onclick="saveEditCatModal()" class="h-10 px-4 rounded-lg bg-primary text-white font-bold">Guardar</button>
+      </div>
+    </div>
+  </div>
+  
+</div>
+
+<!-- Modal de confirmación genérico -->
+<div id="confirm-modal" class="hidden fixed inset-0 z-50">
+  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+  <div class="absolute inset-0 flex items-center justify-center p-4">
+    <div class="w-full max-w-sm rounded-2xl bg-white shadow-xl border">
+      <div class="px-5 py-4 border-b">
+        <p id="conf-title" class="text-base font-bold text-[#2b211b]">Confirmar acción</p>
+      </div>
+      <div class="px-5 py-4 space-y-2">
+        <p id="conf-message" class="text-sm text-[#6b5b52]">¿Estás seguro de que deseas continuar?</p>
+        <p class="text-[11px] text-[#a27a5a]">Esta acción no se puede deshacer.</p>
+      </div>
+      <div class="px-5 py-3 border-t flex flex-col sm:flex-row gap-2 sm:gap-3 justify-end">
+        <button id="conf-cancel" class="h-9 px-4 rounded-full border text-xs sm:text-sm font-bold text-[#2b211b] bg-white">Cancelar</button>
+        <button id="conf-ok" class="h-9 px-4 rounded-full bg-red-500 text-white text-xs sm:text-sm font-bold">Sí, eliminar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Subcategoría (crear/editar) -->
+<div id="sub-modal" class="hidden fixed inset-0 z-50">
+  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm z-10"></div>
+  <div class="absolute inset-0 flex items-start justify-center p-4 z-20 overflow-y-auto">
+    <div class="w-full max-w-xl rounded-2xl bg-white shadow-lg border mt-10 mb-10">
+      <div class="px-5 py-4 border-b flex items-center justify-between">
+        <h3 class="font-bold">Nueva Subcategoría</h3>
+        <button id="subm-close" onclick="closeSubModal()" class="h-8 w-8 rounded-full hover:bg-gray-100 flex items-center justify-center"><span class="material-symbols-outlined">close</span></button>
+      </div>
+      <div class="p-5 space-y-3">
+        <label class="text-sm">Imagen (opcional)
+          <input id="subm-file" type="file" accept="image/*" class="mt-1 w-full h-10 rounded-lg border px-3 bg-white" />
+        </label>
+        <div id="subm-prev-wrap" class="hidden">
+          <img id="subm-preview" alt="Vista previa" class="mt-2 max-h-40 rounded-lg border" />
+          <div class="mt-2">
+            <button id="subm-remove-img" type="button" class="h-8 px-3 rounded-md border text-sm">Quitar imagen</button>
+          </div>
+        </div>
+        <label class="text-sm">Nombre
+          <input id="subm-nombre" class="mt-1 w-full h-10 rounded-lg border px-3"/>
+        </label>
+        <label class="text-sm">Slug
+          <input id="subm-slug" class="mt-1 w-full h-10 rounded-lg border px-3"/>
+        </label>
+        <label class="text-sm">Descripción
+          <textarea id="subm-desc" class="mt-1 w-full rounded-lg border px-3 h-24"></textarea>
+        </label>
+        <label class="text-sm">Orden
+          <input id="subm-orden" type="number" class="mt-1 w-full h-10 rounded-lg border px-3" value="1"/>
+        </label>
+        <label class="text-sm inline-flex items-center gap-2"><input id="subm-activa" type="checkbox" checked/> Activa</label>
+      </div>
+      <div class="px-5 py-4 border-t flex items-center justify-end gap-3">
+        <button id="subm-cancel" onclick="closeSubModal()" class="h-10 px-4 rounded-lg border">Cancelar</button>
+        <button id="subm-save" onclick="saveSubModal()" class="h-10 px-4 rounded-lg bg-primary text-white font-bold">Guardar</button>
+      </div>
+    </div>
+  </div>
+  
+</div>
+<script>
+async function requireAdmin(){
+  const ok = await Auth.requireAuth(); if(!ok) return false;
+  try{ if(sessionStorage.getItem('is_admin_flag')==='1'){ return true; } }catch{}
+  try{
+    const { data:rpcVal, error:rpcErr } = await supabaseClient.rpc('fn_is_admin');
+    if(!rpcErr && rpcVal===true){ try{ sessionStorage.setItem('is_admin_flag','1'); }catch{} return true; }
+    if(!rpcErr && rpcVal===false){ location.href='home.html'; return false; }
+  }catch{}
+  try{
+    const s=await Auth.getSession(); const uid=s?.user?.id;
+    const { data, error } = await supabaseClient.from('usuarios').select('es_admin').eq('id',uid).maybeSingle();
+    if(error){ try{ sessionStorage.setItem('is_admin_flag','1'); }catch{} return true; }
+    if(data?.es_admin){ try{ sessionStorage.setItem('is_admin_flag','1'); }catch{} return true; }
+    location.href='home.html'; return false;
+  }catch{ try{ sessionStorage.setItem('is_admin_flag','1'); }catch{} return true; }
+}
+async function editMainCat(id){
+  try{
+    const { data, error } = await supabaseClient.rpc('fn_admin_cat_by_id', { p_id: id });
+    if(error||!data){ alert('No se pudo cargar la categoría'); return; }
+    currentCat = id;
+    openEditCatModal(data);
+  }catch{ alert('No se pudo abrir el editor'); }
+}
+async function deleteMainCat(id){
+  openConfirm('Eliminar categoría principal','¿Eliminar esta categoría principal? Se eliminarán sus subcategorías y los productos que contienen.', async ()=>{
+    try{
+      // Obtener subcategorías
+      const { data:subs, error:subsLoadErr } = await supabaseClient.from('categorias').select('id').eq('parent_id', id);
+      if(subsLoadErr){ alert(subsLoadErr.message||'No se pudieron cargar subcategorías'); return; }
+      const subIds = (subs||[]).map(s=>s.id);
+      // Obtener productos de las subcategorías
+      let pids=[];
+      if(subIds.length>0){
+        const { data:prods, error:prodsErr } = await supabaseClient.from('productos').select('id').in('categoria_id', subIds);
+        if(prodsErr){ alert(prodsErr.message||'No se pudieron cargar productos'); return; }
+        pids = (prods||[]).map(p=>p.id);
+      }
+      // Eliminar orden_items de esos productos
+      if(pids.length>0){
+        const { error:oiErr } = await supabaseClient.from('orden_items').delete().in('producto_id', pids);
+        if(oiErr){ alert(oiErr.message||'No se pudieron eliminar ítems de órdenes'); return; }
+      }
+      // Eliminar productos
+      if(pids.length>0){
+        const { error:prodErr } = await supabaseClient.from('productos').delete().in('id', pids);
+        if(prodErr){ alert(prodErr.message||'No se pudieron eliminar productos de la subcategoría'); return; }
+      }
+      // Eliminar subcategorías
+      const { error:subErr } = await supabaseClient.from('categorias').delete().eq('parent_id', id);
+      if(subErr){ alert(subErr.message||'No se pudieron eliminar subcategorías'); return; }
+      // Eliminar la categoría principal
+      const { error } = await supabaseClient.from('categorias').delete().eq('id', id);
+      if(error){ alert(error.message||'No se pudo eliminar'); return; }
+      if(currentCat===id){ currentCat=null; }
+      await loadCats();
+      document.getElementById('sub-list').innerHTML='';
+      document.getElementById('sub-title').textContent='Subcategorías';
+    }catch{ alert('No se pudo eliminar'); }
+  });
+}
+let currentCat=null, currentSub=null;
+async function loadCats(){
+  const { data } = await supabaseClient.rpc('fn_admin_cats_root');
+  const list=document.getElementById('cat-list');
+  list.innerHTML=(data||[]).map(c=>`
+    <div class="flex items-center justify-between w-full h-10 rounded-lg px-3 border hover:bg-primary/5">
+      <button data-cat="${c.id}" class="flex-1 text-left">
+        <span>${c.nombre}</span>
+        <span class="ml-2 text-xs ${c.activa?'text-green-700':'text-red-700'}">${c.activa?'Activa':'Inactiva'}</span>
+      </button>
+      <div class="flex items-center gap-2">
+        <button title="Editar" data-cat-edit="${c.id}" class="h-8 w-8 rounded-md border text-primary">✎</button>
+        <button title="Eliminar" data-cat-del="${c.id}" class="h-8 w-8 rounded-md border text-red-600">🗑</button>
+      </div>
+    </div>`).join('');
+  // Seleccionar automáticamente la primera categoría para habilitar acciones de edición
+  const first = list.querySelector('[data-cat]');
+  if(first){ loadSubs(Number(first.getAttribute('data-cat'))); }
+}
+async function loadSubs(catId){
+  currentCat=catId; 
+  const nm = await supabaseClient.rpc('fn_admin_cat_by_id', { p_id: catId });
+  document.getElementById('sub-title').textContent = `Subcategorías de "${nm.data?.nombre||''}"`;
+  const { data } = await supabaseClient.rpc('fn_admin_cats_by_parent', { p_parent_id: catId });
+  const c = document.getElementById('sub-list');
+  c.innerHTML = (data||[]).map(s=>`<div class='flex items-center justify-between p-3'>
+    <div class='flex items-center gap-3'><p class='font-medium'>${s.nombre}</p><span class='text-xs text-gray-500'>${s.slug||''}</span><span class='text-xs ${s.activa?'text-green-700':'text-red-700'}'>${s.activa?'Activa':'Inactiva'}</span></div>
+    <div class='flex items-center gap-2'><button data-edit='${s.id}' class='text-primary'>✎</button><button data-del='${s.id}' class='text-red-600'>🗑</button></div>
+  </div>`).join('');
+}
+function bindEvents(){
+  document.getElementById('cat-list').addEventListener('click', async (e)=>{
+    const b=e.target.closest('[data-cat]');
+    const be=e.target.closest('[data-cat-edit]');
+    const bd=e.target.closest('[data-cat-del]');
+    if(b){ loadSubs(Number(b.getAttribute('data-cat'))); return; }
+    if(be){ const id=Number(be.getAttribute('data-cat-edit')); await editMainCat(id); return; }
+    if(bd){ const id=Number(bd.getAttribute('data-cat-del')); await deleteMainCat(id); return; }
+  });
+  document.getElementById('sub-list').addEventListener('click', async (e)=>{
+    const ed=e.target.closest('[data-edit]'); const del=e.target.closest('[data-del]');
+    if(ed){ try{ const id=Number(ed.getAttribute('data-edit')); const { data, error } = await supabaseClient.rpc('fn_admin_cat_by_id', { p_id: id }); if(error||!data){ alert('No se pudo cargar la subcategoría'); return; } openSubModal(data); }catch{ alert('No se pudo abrir el editor'); } }
+    if(del){
+      const id=Number(del.getAttribute('data-del'));
+      openConfirm('Eliminar subcategoría','¿Eliminar esta subcategoría? También se eliminarán los productos dentro de ella y sus ítems de órdenes.', async ()=>{
+        try{
+          // 1) obtener productos de esta subcategoría
+          const { data:prods, error:prodsErr } = await supabaseClient.from('productos').select('id').eq('categoria_id', id);
+          if(prodsErr){ alert(prodsErr.message||'No se pudo cargar productos'); return; }
+          const pids = (prods||[]).map(p=>p.id);
+          // 2) borrar orden_items de esos productos
+          if(pids.length>0){
+            const { error:oiErr } = await supabaseClient.from('orden_items').delete().in('producto_id', pids);
+            if(oiErr){ alert(oiErr.message||'No se pudieron eliminar ítems de órdenes'); return; }
+          }
+          // 3) borrar productos
+          if(pids.length>0){
+            const { error:prodErr } = await supabaseClient.from('productos').delete().in('id', pids);
+            if(prodErr){ alert(prodErr.message||'No se pudieron eliminar productos de la subcategoría'); return; }
+          }
+          // 4) borrar la subcategoría
+          const { error } = await supabaseClient.from('categorias').delete().eq('id', id);
+          if(error){ alert(error.message||'No se pudo eliminar'); return; }
+          loadSubs(currentCat);
+        }catch(ex){ alert('No se pudo eliminar'); }
+      });
+    }
+  });
+  const subSaveBtn = document.getElementById('sub-save');
+  if(subSaveBtn){
+    subSaveBtn.addEventListener('click', async ()=>{
+      if(!currentCat){ alert('Selecciona una categoría'); return; }
+      const payload={ parent_id: currentCat, nombre: document.getElementById('sub-nombre').value.trim(), slug: document.getElementById('sub-slug').value.trim()||null, descripcion: document.getElementById('sub-desc').value.trim()||null, orden: Number(document.getElementById('sub-orden').value||1), activa: document.getElementById('sub-activa').checked };
+      if(currentSub){ payload.id=currentSub; }
+      await supabaseClient.from('categorias').upsert(payload); currentSub=null; document.getElementById('edit-title').textContent='Editando Subcategoría'; loadSubs(currentCat);
+    });
+  }
+}
+function slugify(txt){ return (txt||'').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''); }
+function openCatModal(){ document.getElementById('cat-modal').classList.remove('hidden'); document.body.classList.add('overflow-hidden'); }
+function closeCatModal(){ document.getElementById('cat-modal').classList.add('hidden'); document.body.classList.remove('overflow-hidden'); document.getElementById('catm-file').value=''; document.getElementById('catm-nombre').value=''; document.getElementById('catm-slug').value=''; document.getElementById('catm-desc').value=''; document.getElementById('catm-activa').checked=true; }
+async function saveCatModal(){
+  const nombre = document.getElementById('catm-nombre').value.trim();
+  if(!nombre){ alert('Nombre es obligatorio'); return; }
+  let slug = document.getElementById('catm-slug').value.trim();
+  if(!slug) slug = slugify(nombre);
+  const activa = document.getElementById('catm-activa').checked;
+  const desc = document.getElementById('catm-desc').value.trim()||null;
+  let imagen_url = null;
+  const file = document.getElementById('catm-file').files[0];
+  if(file){
+    const path = `categorias/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g,'_')}`;
+    const { error:upErr } = await supabaseClient.storage.from('imagenes').upload(path, file, { contentType: file.type, upsert: true });
+    if(upErr){ alert(upErr.message||'No se pudo subir la imagen'); return; }
+    const pub = supabaseClient.storage.from('imagenes').getPublicUrl(path);
+    imagen_url = pub.data.publicUrl || null;
+  }
+  const payload = { parent_id: null, nombre, slug, descripcion: desc, imagen_url, activa };
+  const { error } = await supabaseClient.from('categorias').insert(payload);
+  if(error){ alert(error.message||'No se pudo crear'); return; }
+  closeCatModal();
+  loadCats();
+}
+// Editar categoría principal
+let cateRemoveImg=false;
+function openEditCatModal(pref){ document.getElementById('cat-edit-modal').classList.remove('hidden'); document.body.classList.add('overflow-hidden'); document.getElementById('cate-nombre').value=pref?.nombre||''; document.getElementById('cate-slug').value=pref?.slug||''; document.getElementById('cate-desc').value=pref?.descripcion||''; document.getElementById('cate-activa').checked=!!pref?.activa; cateRemoveImg=false; const img=pref?.imagen_url||''; const wrap=document.getElementById('cate-prev-wrap'); const prev=document.getElementById('cate-preview'); if(img){ prev.src=img; wrap.classList.remove('hidden'); } else { prev.removeAttribute('src'); wrap.classList.add('hidden'); } const fileIn=document.getElementById('cate-file'); fileIn.value=''; fileIn.onchange=(e)=>{ const f=e.target.files?.[0]; if(f){ cateRemoveImg=false; const url=URL.createObjectURL(f); prev.src=url; wrap.classList.remove('hidden'); } } ; const rm=document.getElementById('cate-remove-img'); if(rm){ rm.onclick=()=>{ cateRemoveImg=true; prev.removeAttribute('src'); wrap.classList.add('hidden'); fileIn.value=''; }; } }
+function closeEditCatModal(){ document.getElementById('cat-edit-modal').classList.add('hidden'); document.body.classList.remove('overflow-hidden'); const f=document.getElementById('cate-file'); if(f){ f.value=''; } const wrap=document.getElementById('cate-prev-wrap'); const prev=document.getElementById('cate-preview'); if(wrap&&prev){ prev.removeAttribute('src'); wrap.classList.add('hidden'); } cateRemoveImg=false; }
+async function saveEditCatModal(){ if(!currentCat){ alert('Selecciona una categoría'); return; } const nombre=document.getElementById('cate-nombre').value.trim(); if(!nombre){ alert('Nombre es obligatorio'); return; } const slug=(document.getElementById('cate-slug').value.trim())||slugify(nombre); const desc=document.getElementById('cate-desc').value.trim()||null; const activa=document.getElementById('cate-activa').checked; let imagen_url=null; const f=document.getElementById('cate-file').files[0]; if(f){ const path=`categorias/${Date.now()}-${f.name.replace(/[^a-zA-Z0-9.\-_]/g,'_')}`; const { error:upErr }=await supabaseClient.storage.from('imagenes').upload(path, f, {contentType:f.type, upsert:true}); if(upErr){ alert(upErr.message||'No se pudo subir la imagen'); return; } const pub=supabaseClient.storage.from('imagenes').getPublicUrl(path); imagen_url=pub.data.publicUrl||null; } const payload={ id: currentCat, nombre, slug, descripcion: desc, activa }; if(imagen_url!==null){ if(imagen_url){ payload.imagen_url=imagen_url; } else if(cateRemoveImg){ payload.imagen_url=null; } } else { if(cateRemoveImg){ payload.imagen_url=null; } } const { error } = await supabaseClient.from('categorias').upsert(payload); if(error){ alert(error.message||'No se pudo guardar'); return; } closeEditCatModal(); loadCats(); }
+
+// Modal Subcategoría (crear/editar)
+let subModalEditingId = null;
+let subRemoveImg=false;
+function openSubModal(pref){ document.getElementById('sub-modal').classList.remove('hidden'); document.body.classList.add('overflow-hidden'); document.getElementById('subm-title').textContent = pref && pref.id ? 'Editar Subcategoría' : 'Nueva Subcategoría'; subModalEditingId = pref?.id || null; document.getElementById('subm-nombre').value=pref?.nombre||''; document.getElementById('subm-slug').value=pref?.slug||''; document.getElementById('subm-desc').value=pref?.descripcion||''; document.getElementById('subm-orden').value=pref?.orden||1; document.getElementById('subm-activa').checked= pref?.activa ?? true; subRemoveImg=false; const wrap=document.getElementById('subm-prev-wrap'); const prev=document.getElementById('subm-preview'); const img=pref?.imagen_url||''; if(img){ prev.src=img; wrap.classList.remove('hidden'); } else { prev.removeAttribute('src'); wrap.classList.add('hidden'); } const fileIn=document.getElementById('subm-file'); fileIn.value=''; fileIn.onchange=(e)=>{ const f=e.target.files?.[0]; if(f){ subRemoveImg=false; const url=URL.createObjectURL(f); prev.src=url; wrap.classList.remove('hidden'); } }; const rm=document.getElementById('subm-remove-img'); if(rm){ rm.onclick=()=>{ subRemoveImg=true; prev.removeAttribute('src'); wrap.classList.add('hidden'); fileIn.value=''; }; } }
+function closeSubModal(){ document.getElementById('sub-modal').classList.add('hidden'); document.body.classList.remove('overflow-hidden'); const f=document.getElementById('subm-file'); if(f){ f.value=''; } const wrap=document.getElementById('subm-prev-wrap'); const prev=document.getElementById('subm-preview'); if(wrap&&prev){ prev.removeAttribute('src'); wrap.classList.add('hidden'); } subRemoveImg=false; }
+async function saveSubModal(){ if(!currentCat){ alert('Selecciona una categoría'); return; } const nombre=document.getElementById('subm-nombre').value.trim(); if(!nombre){ alert('Nombre es obligatorio'); return; } const slug=(document.getElementById('subm-slug').value.trim())||slugify(nombre); const desc=document.getElementById('subm-desc').value.trim()||null; const orden= Number(document.getElementById('subm-orden').value||1); const activa=document.getElementById('subm-activa').checked; let imagen_url=null; const f=document.getElementById('subm-file').files[0]; if(f){ const path=`categorias/${Date.now()}-${f.name.replace(/[^a-zA-Z0-9.\-_]/g,'_')}`; const { error:upErr }=await supabaseClient.storage.from('imagenes').upload(path, f, {contentType:f.type, upsert:true}); if(upErr){ alert(upErr.message||'No se pudo subir la imagen'); return; } const pub=supabaseClient.storage.from('imagenes').getPublicUrl(path); imagen_url=pub.data.publicUrl||null; } const payload={ parent_id: currentCat, nombre, slug, descripcion: desc, orden, activa }; if(subModalEditingId) payload.id=subModalEditingId; if(imagen_url!==null){ if(imagen_url){ payload.imagen_url=imagen_url; } else if(subRemoveImg){ payload.imagen_url=null; } } else { if(subRemoveImg){ payload.imagen_url=null; } } const { error } = await supabaseClient.from('categorias').upsert(payload); if(error){ alert(error.message||'No se pudo guardar'); return; } closeSubModal(); loadSubs(currentCat); }
+// Modal de confirmación
+let _confirmCb=null;
+function openConfirm(title, message, onOk){
+  _confirmCb = onOk || null;
+  const m=document.getElementById('confirm-modal');
+  document.getElementById('conf-title').textContent = title||'Confirmar acción';
+  document.getElementById('conf-message').textContent = message||'¿Estás seguro de que deseas continuar?';
+  m.classList.remove('hidden');
+  document.body.classList.add('overflow-hidden');
+}
+function closeConfirm(){
+  document.getElementById('confirm-modal').classList.add('hidden');
+  document.body.classList.remove('overflow-hidden');
+  _confirmCb=null;
+}
+window.addEventListener('DOMContentLoaded', async ()=>{
+  if(await requireAdmin()){
+    await loadCats(); bindEvents();
+    document.getElementById('btn-admin-logout')?.addEventListener('click', Auth.signOut);
+    document.getElementById('btn-new-cat')?.addEventListener('click', openCatModal);
+    document.getElementById('catm-close')?.addEventListener('click', closeCatModal);
+    document.getElementById('catm-cancel')?.addEventListener('click', closeCatModal);
+    document.getElementById('catm-nombre')?.addEventListener('input', (e)=>{ const v=e.target.value; if(!(document.getElementById('catm-slug').value||'').trim()){ document.getElementById('catm-slug').value = slugify(v); } });
+    document.getElementById('catm-save')?.addEventListener('click', saveCatModal);
+    // editar categoría principal
+    document.getElementById('btn-edit-cat')?.addEventListener('click', async ()=>{
+      try{
+        if(!currentCat){
+          // intenta seleccionar la primera categoría disponible
+          const list=document.getElementById('cat-list'); const first=list?.querySelector('[data-cat]');
+          if(first){ await loadSubs(Number(first.getAttribute('data-cat'))); }
+        }
+        if(!currentCat){ alert('Selecciona una categoría de la lista'); return; }
+        const { data, error } = await supabaseClient.rpc('fn_admin_cat_by_id', { p_id: currentCat });
+        if(error||!data){ alert('No se pudo cargar la categoría'); return; }
+        openEditCatModal(data);
+      }catch{ alert('No se pudo abrir el editor'); }
+    });
+    document.getElementById('cate-close')?.addEventListener('click', closeEditCatModal);
+    document.getElementById('cate-cancel')?.addEventListener('click', closeEditCatModal);
+    document.getElementById('cate-save')?.addEventListener('click', saveEditCatModal);
+    // subcategoría modal
+    document.getElementById('btn-new-sub')?.addEventListener('click', ()=> openSubModal(null));
+    document.getElementById('subm-close')?.addEventListener('click', closeSubModal);
+    document.getElementById('subm-cancel')?.addEventListener('click', closeSubModal);
+    document.getElementById('subm-save')?.addEventListener('click', saveSubModal);
+    // confirm modal events
+    document.getElementById('conf-cancel')?.addEventListener('click', closeConfirm);
+    document.getElementById('confirm-modal')?.addEventListener('click', (e)=>{ if(e.target.id==='confirm-modal'){ closeConfirm(); }});
+    document.getElementById('conf-ok')?.addEventListener('click', async ()=>{ const cb=_confirmCb; closeConfirm(); if(typeof cb==='function'){ await cb(); }});
+  }
+});
+
+// Respaldo por inline onclick
+async function onEditCat(){
+  try{
+    if(!currentCat){
+      const list=document.getElementById('cat-list'); const first=list?.querySelector('[data-cat]');
+      if(first){ await loadSubs(Number(first.getAttribute('data-cat'))); }
+    }
+    if(!currentCat){ alert('Selecciona una categoría de la lista'); return; }
+    const { data, error } = await supabaseClient.rpc('fn_admin_cat_by_id', { p_id: currentCat });
+    if(error||!data){ alert('No se pudo cargar la categoría'); return; }
+    openEditCatModal(data);
+  }catch{}
+}
+function onNewSub(){ if(!currentCat){ alert('Selecciona una categoría de la lista'); return; } openSubModal(null); }
+</script>
+</body></html>

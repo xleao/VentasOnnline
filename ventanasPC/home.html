@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Makitu Store - Inicio</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<link rel="preload" as="image" href="img/fondo.png?v=4"/>
+<script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{primary:"#6F5E53","background-light":"#F7F5F2","background-dark":"#211911","card-light":"#D3C4B3","text-main":"#333333"},fontFamily:{display:["Inter","sans-serif"]},borderRadius:{DEFAULT:"0.5rem",lg:"1rem",xl:"1.5rem",full:"9999px"}}}}</script>
+<style>.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}
+/* Guirnalda de luces navideñas */
+.xmas-lights{position:absolute;top:0;left:0;right:0;height:48px;display:flex;justify-content:center;gap:14px;z-index:5;pointer-events:none}
+.xmas-bulb{width:10px;height:16px;border-radius:6px 6px 10px 10px;transform-origin:top center;animation:swing 3s ease-in-out infinite;opacity:.9}
+.xmas-bulb:nth-child(odd){animation-duration:3.6s}
+.xmas-bulb::after{content:"";position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:8px;height:6px;background:#444;border-radius:2px}
+@keyframes swing{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
+@keyframes twinkle{0%,100%{filter:brightness(1)}50%{filter:brightness(1.8)}}
+</style>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script defer src="assets/app.js"></script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-text-main dark:text-background-light">
+<div class="relative flex min-h-screen w-full flex-col">
+<main class="flex-1">
+<section class="relative flex min-h-[70vh] md:h-[calc(100vh-4rem)] w-full items-center justify-center">
+<img id="hero-bg" src="img/fondo.png?v=4" alt="Fondo" class="absolute inset-0 w-full h-full object-cover"/>
+<canvas id="rain-canvas" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
+<div class="absolute inset-0 bg-background-light/20 dark:bg-background-dark/30"></div>
+<!-- Guirnalda -->
+<div class="xmas-lights">
+  <div class="relative xmas-bulb" style="background:#e63946; animation: swing 3.2s ease-in-out infinite, twinkle 1.6s ease-in-out infinite 0.1s"></div>
+  <div class="relative xmas-bulb" style="background:#f1fa8c; animation: swing 3s ease-in-out infinite, twinkle 1.8s ease-in-out infinite 0.2s"></div>
+  <div class="relative xmas-bulb" style="background:#06d6a0; animation: swing 3.4s ease-in-out infinite, twinkle 1.7s ease-in-out infinite 0.3s"></div>
+  <div class="relative xmas-bulb" style="background:#118ab2; animation: swing 3.1s ease-in-out infinite, twinkle 1.9s ease-in-out infinite 0.4s"></div>
+  <div class="relative xmas-bulb" style="background:#ffd166; animation: swing 3.6s ease-in-out infinite, twinkle 1.5s ease-in-out infinite 0.5s"></div>
+  <div class="relative xmas-bulb" style="background:#ef476f; animation: swing 3.3s ease-in-out infinite, twinkle 1.8s ease-in-out infinite 0.6s"></div>
+  <div class="relative xmas-bulb" style="background:#a8dadc; animation: swing 3.2s ease-in-out infinite, twinkle 1.7s ease-in-out infinite 0.7s"></div>
+</div>
+<div class="relative z-10 mx-4 max-w-md sm:max-w-xl rounded-md bg-white/90 px-3 py-4 text-center shadow-md backdrop-blur-md dark:bg-background-dark/80 sm:px-6 sm:py-7">
+  <div class="flex flex-col items-center gap-3 sm:gap-4">
+    <h1 class="text-3xl sm:text-4xl font-black tracking-tighter text-primary">Makitu Store</h1>
+    <p class="text-sm sm:text-base leading-relaxed text-text-main/80">Compra accesorios chéveres y originales. Entregamos en la UNI y puedes pagar con <span class="font-semibold">Yape</span> o <span class="font-semibold">efectivo en la UNI</span>.</p>
+    <a href="#categories" class="mt-1 sm:mt-2 flex w-full sm:min-w-[84px] sm:max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-md bg-primary px-4 py-3 text-sm sm:text-base font-bold text-white transition-transform hover:scale-105">Explorar colección</a>
+  </div>
+</div>
+<div class="absolute bottom-16 sm:bottom-8 left-1/2 -translate-x-1/2 animate-bounce"><span class="material-symbols-outlined text-4xl text-primary">keyboard_arrow_down</span></div>
+</section>
+<section id="categories" class="w-full py-12 md:py-20 lg:py-24">
+<div class="container mx-auto px-4 sm:px-6 lg:px-8">
+<h2 class="mb-8 text-center text-3xl font-bold tracking-tight sm:text-4xl">Compra por Categoría</h2>
+<div id="home-cats" class="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-6"></div>
+</div>
+</section>
+</main>
+</div>
+<script>
+function initSnow(){
+  const canvas=document.getElementById('rain-canvas');
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  let w=0,h=0, DPR=window.devicePixelRatio||1;
+  function resize(){
+    const r=canvas.getBoundingClientRect();
+    w=r.width; h=r.height;
+    canvas.width=Math.floor(w*DPR);
+    canvas.height=Math.floor(h*DPR);
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+  }
+  
+  window.addEventListener('resize', resize);
+  resize();
+  // Copos de nieve
+  const flakes=[];
+  function resetFlake(f){
+    f.x=Math.random()*w;
+    f.y=-Math.random()*h;
+    f.r= 0.9 + Math.random()*1.4;        // copo medio
+    f.speed= 16 + Math.random()*24;      // rápido
+    f.wind= -14 + Math.random()*28;      // viento
+    f.alpha= 0.45 + Math.random()*0.35;  // visible
+    f.swingA = Math.random()*Math.PI*2;   // fase
+    f.swingW = 0.5 + Math.random()*1.2;   // frecuencia
+    f.swingAmp = 4 + Math.random()*10;    // amplitud
+  }
+  const COUNT= Math.max(1400, Math.floor(w*2));
+  for(let i=0;i<COUNT;i++){ flakes.push({}); resetFlake(flakes[i]); flakes[i].y=Math.random()*h; }
+  let last=performance.now();
+  function frame(t){
+    const dt=(t-last)/1000; last=t;
+    ctx.clearRect(0,0,w,h);
+    for(const f of flakes){
+      ctx.globalAlpha=f.alpha;
+      const sx = Math.sin(f.swingA + f.y*0.01)*f.swingAmp;
+      ctx.fillStyle='rgba(255,255,255,0.95)';
+      ctx.beginPath();
+      ctx.arc(f.x+sx, f.y, f.r, 0, Math.PI*2);
+      ctx.fill();
+      f.y += f.speed*dt;
+      f.x += f.wind*dt;
+      if(f.y - f.r > h || f.x < -20 || f.x > w+20){ resetFlake(f); }
+    }
+    ctx.globalAlpha=1;
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+// Fuera de initRain, para que esté disponible globalmente
+function resolveHeroBackground(){
+  const el = document.getElementById('hero-bg');
+  if(!el) return;
+  if(el.complete && el.naturalWidth>0){ return; }
+  const relBase = 'img/fondo';
+  const absBase = '/img/fondo';
+  const subdirBase = '/ventanasPC/img/fondo';
+  const cands = [
+    `${relBase}.png`, `${relBase}.jpg`, `${relBase}.jpeg`,
+    `${relBase}.PNG`, `${relBase}.JPG`, `${relBase}.JPEG`,
+    'img/Fondo.png','img/Fondo.jpg','img/Fondo.jpeg',
+    'img/fondo', 'img/Fondo',
+    `${absBase}.png`, `${absBase}.jpg`, `${absBase}.jpeg`,
+    `${absBase}.PNG`, `${absBase}.JPG`, `${absBase}.JPEG`,
+    '/img/Fondo.png','/img/Fondo.jpg','/img/Fondo.jpeg',
+    '/img/fondo', '/img/Fondo',
+    `${subdirBase}.png`, `${subdirBase}.jpg`, `${subdirBase}.jpeg`,
+    `${subdirBase}.PNG`, `${subdirBase}.JPG`, `${subdirBase}.JPEG`
+  ];
+  let idx = 0;
+  function tryNext(){
+    if(idx>=cands.length){ console.warn('No se encontró ninguna imagen de fondo en img/ (fondo.png/.jpg/.jpeg).'); return; }
+    const url = cands[idx++] + `?v=${Date.now()}`;
+    const probe = new Image();
+    probe.onload = ()=>{ el.src = url; };
+    probe.onerror = tryNext;
+    probe.src = url;
+  }
+  tryNext();
+}
+async function loadHomeCats(){
+  const grid = document.getElementById('home-cats');
+  if(!grid) return;
+  // skeleton
+  grid.innerHTML = new Array(8).fill(0).map(()=>`<div class="relative aspect-square rounded-xl bg-gray-200 animate-pulse"></div>`).join('');
+  // esperar a que supabase esté listo si aún no
+  let tries=0; while(!window.supabaseClient && tries<10){ await new Promise(r=>setTimeout(r,100)); tries++; }
+  if(!window.supabaseClient){ grid.innerHTML = `<div class='col-span-full text-center'>No se pudo inicializar la app</div>`; return; }
+  try{
+    const { data, error } = await supabaseClient
+      .from('categorias')
+      .select('id,nombre,imagen_url,activa,parent_id,orden')
+      .is('parent_id', null)
+      .eq('activa', true)
+      .order('orden', { ascending: true, nullsFirst: false })
+      .order('id', { ascending: true })
+      .limit(8);
+    if(error){ console.error('loadHomeCats error', error); grid.innerHTML = `<div class='col-span-full text-center'>Error cargando categorías</div>`; return; }
+    if(!data || data.length===0){ grid.innerHTML = `<div class='col-span-full text-center'>No hay categorías</div>`; return; }
+    grid.innerHTML = data.map(c=>`
+      <a href="categoria.html?id=${c.id}" class="flex flex-col rounded-xl overflow-hidden bg-white border shadow-sm hover:shadow-lg transition-shadow group">
+        <div class="relative w-full aspect-square overflow-hidden">
+          <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" src="${c.imagen_url || 'https://images.unsplash.com/photo-1520975922284-9d27911b2a71?auto=format&fit=crop&w=800&q=60'}"/>
+        </div>
+        <div class="flex flex-col p-4 gap-1"><h3 class="font-bold text-primary text-base">${c.nombre}</h3></div>
+      </a>`).join('');
+  }catch(err){ console.error('loadHomeCats exception', err); grid.innerHTML = `<div class='col-span-full text-center'>Error cargando categorías</div>`; }
+}
+window.resolveHeroBackground = resolveHeroBackground;
+window.addEventListener('DOMContentLoaded', ()=>{ resolveHeroBackground(); initSnow(); loadHomeCats(); });
+</script>
+</body></html>

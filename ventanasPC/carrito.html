@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Mi Carrito de Compras - Makitu Store</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link href="https://fonts.gstatic.com" rel="preconnect" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<script>tailwind.config={darkMode:"class",theme:{extend:{colors:{primary:"#e6994c","background-light":"#f8f7f6","background-dark":"#211911","brand-primary":"#A0522D","brand-background":"#F5F5DC","brand-secondary":"#D2B48C","brand-text-primary":"#5D4037","brand-text-secondary":"#877564","brand-alert":"#d9534f"},fontFamily:{display:["Inter","sans-serif"]},borderRadius:{DEFAULT:"0.5rem",lg:"1rem",xl:"1.5rem",full:"9999px"}}}}</script>
+<style>
+.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}
+/* Ocultar spinners y mejorar visibilidad de cantidad */
+input[type=number].no-spin::-webkit-outer-spin-button,
+input[type=number].no-spin::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number].no-spin { -moz-appearance: textfield; appearance: textfield; }
+</style>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script defer src="assets/app.js"></script>
+</head>
+<body class="font-display bg-brand-background text-brand-text-primary">
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+<main class="flex-1 justify-center py-5 sm:py-10 px-4 sm:px-6 md:px-8">
+<div class="w-full max-w-6xl mx-auto">
+<div class="flex flex-wrap justify-between gap-3 p-4"><h1 class="text-brand-text-primary text-4xl font-black">Mi Carrito de Compras</h1></div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-6">
+<div class="lg:col-span-2 space-y-4" id="cart-list"></div>
+<div class="lg:col-span-1">
+<div class="bg-white rounded-xl shadow-sm p-6 sticky top-28">
+<h2 class="text-brand-text-primary text-[22px] font-bold pb-3 border-b border-brand-secondary/20">Resumen del pedido</h2>
+<div class="space-y-4 pt-4">
+<div class="flex justify-between items-center text-brand-text-secondary"><span>Subtotal</span><span id="subtotal" class="text-brand-text-primary font-medium">S/ 0.00</span></div>
+<div class="flex justify-between items-center text-brand-text-secondary"><span>Envío</span><span class="text-brand-text-primary font-medium">Gratis</span></div>
+</div>
+<div class="border-t border-brand-secondary/20 my-4"></div>
+<div class="flex justify-between items-center text-brand-text-primary font-bold text-lg"><span>Total</span><span id="total">S/ 0.00</span></div>
+<a href="checkout.html" class="block w-full mt-6 rounded-lg h-12 px-6 bg-brand-primary text-white text-base font-bold text-center leading-[48px] hover:opacity-90">Continuar con el pedido</a>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<script>
+let STOCK_MAP = {};
+async function loadStocks(){
+  try{
+    const ids = Cart.read().map(x=>x.producto_id).filter((v,i,a)=>a.indexOf(v)===i);
+    if(ids.length===0){ STOCK_MAP = {}; return; }
+    const { data } = await supabaseClient.from('productos').select('id,stock').in('id', ids);
+    STOCK_MAP = Object.fromEntries((data||[]).map(r=>[String(r.id), Number(r.stock||0)]));
+  }catch{ STOCK_MAP = {}; }
+}
+function money(n){return `S/ ${(n||0).toFixed(2)}`}
+// Nota: el handler global en assets/app.js maneja [data-inc],[data-dec],[data-remove]
+function renderItem(it){
+  const key = String(it.producto_id);
+  const stock = STOCK_MAP[key];
+  const disablePlus = (typeof stock === 'number' && stock >= 0 && (it.cantidad >= stock));
+  return `<div class="flex flex-col bg-white rounded-xl shadow-sm overflow-hidden">
+  <div class="flex flex-col md:flex-row gap-3 md:gap-4 px-4 py-4 border-b border-brand-secondary/20">
+    <div class="flex items-center gap-3 md:gap-4 w-full">
+      <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-lg size-16" style="background-image:url('${it.imagen_url||''}')"></div>
+      <div class="flex flex-col justify-center flex-grow"><p class="text-base font-medium line-clamp-1">${it.nombre}</p><p class="text-sm text-brand-text-secondary">${money(Number(it.precio_unitario))}</p></div>
+    </div>
+    <div class="flex items-center justify-between md:justify-end gap-4 w-full md:w-auto">
+      <div class="shrink-0"><div class="flex items-center gap-2">
+        <button type="button" data-dec="${it.producto_id}" class="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full bg-brand-secondary/20 hover:bg-brand-secondary/40">-</button>
+        <input class="no-spin w-12 h-9 text-center border rounded-md bg-white text-brand-text-primary font-medium" type="number" value="${it.cantidad}" readonly/>
+        <button type="button" data-inc="${it.producto_id}" ${disablePlus?'disabled':''} class="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full ${disablePlus?'bg-gray-200 text-gray-400 cursor-not-allowed':'bg-brand-secondary/20 hover:bg-brand-secondary/40'}">+</button>
+      </div></div>
+      <button type="button" data-remove="${it.producto_id}" class="pointer-events-auto text-brand-alert hover:text-red-700"><span class="material-symbols-outlined">delete</span></button>
+    </div>
+  </div>
+</div>`
+}
+async function refreshCartPage(){
+  const items = Cart.read();
+  const list = document.getElementById('cart-list');
+  if(items.length===0){ list.innerHTML = `<div class='bg-white rounded-xl p-8 text-center'>Tu carrito está vacío. <a class='text-brand-primary font-bold' href='home.html'>Ir al inicio</a></div>`; document.getElementById('subtotal').textContent=money(0); document.getElementById('total').textContent=money(0); return; }
+  await loadStocks();
+  list.innerHTML = items.map(renderItem).join('');
+  const total = Cart.total();
+  document.getElementById('subtotal').textContent = money(total);
+  document.getElementById('total').textContent = money(total);
+}
+window.refreshCartPage = refreshCartPage;
+window.addEventListener('DOMContentLoaded', refreshCartPage);
+</script>
+</body></html>

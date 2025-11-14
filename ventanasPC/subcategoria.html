@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Makitu Store - Subcategoría</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<style>@layer base{ :root{ --background:240 10% 98%; --primary:31 81% 54%; } .dark{ --background:232 21% 11%; --primary:31 81% 54%; }}</style>
+<style>
+/* Ocultar spinners de inputs number */
+input[type=number].no-spin::-webkit-outer-spin-button,
+input[type=number].no-spin::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number].no-spin { -moz-appearance: textfield; appearance: textfield; }
+</style>
+<style>
+/* Lightbox: botón de cierre minimalista */
+.lb-close{width:36px; height:36px; border:2px solid #fff; color:#fff; border-radius:9999px; display:flex; align-items:center; justify-content:center; font-size:20px; background:rgba(255,255,255,.06)}
+.lb-close:hover{background:rgba(255,255,255,.14)}
+</style>
+<script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{primary:"#e88c30","background-light":"#f8f7f6","background-dark":"#211911"},fontFamily:{display:["Inter","sans-serif"]},borderRadius:{DEFAULT:"0.25rem",lg:"0.5rem",xl:"0.75rem",full:"9999px"}}}}</script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script defer src="assets/app.js"></script>
+</head>
+<body class="font-display bg-background-light dark:bg-background-dark text-[#211911] dark:text-[#f8f7f6]">
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+<main class="flex-1">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+<div class="flex flex-col gap-4">
+<div class="flex flex-wrap gap-2 px-4"><a class="text-gray-500 text-sm font-medium hover:text-primary" href="home.html">Inicio</a><span class="text-gray-500 text-sm font-medium">/</span><a class="text-gray-500 text-sm font-medium hover:text-primary" href="categorias.html">Categorías</a><span class="text-gray-500 text-sm font-medium">/</span><span id="sc-name" class="text-[#211911] text-sm font-medium">Subcategoría</span></div>
+<div class="flex flex-wrap justify-between gap-3 px-4"><p id="sc-title" class="text-[#211911] text-4xl font-black">Subcategoría</p></div>
+</div>
+<div class="flex flex-col gap-6">
+<h2 class="text-primary text-[22px] font-bold pt-5">Productos</h2>
+<div id="prod-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6"></div>
+</div>
+</div>
+</main>
+</div>
+<!-- Lightbox de imagen de producto -->
+<div id="img-lightbox" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm">
+  <button id="lb-close" class="lb-close absolute top-4 right-4" aria-label="Cerrar">×</button>
+  <div id="lb-stage" class="relative overflow-hidden cursor-zoom-in max-w-[92vw] max-h-[82vh] flex items-center justify-center">
+    <img id="lb-img" class="block max-h-[82vh] max-w-[92vw] rounded-lg shadow-2xl select-none" src="" alt="Imagen de producto"/>
+  </div>
+  <!-- Controles de zoom -->
+  <div class="absolute bottom-6 right-6 flex items-center gap-2">
+    <button id="lb-zoom-out" class="lb-close !w-9 !h-9" title="Alejar">−</button>
+    <button id="lb-zoom-in" class="lb-close !w-9 !h-9" title="Acercar">＋</button>
+    <button id="lb-zoom-reset" class="lb-close !w-9 !h-9" title="Restablecer">⟳</button>
+  </div>
+</div>
+<script>
+function moneyUSD(n){ return `S/ ${(n||0).toFixed(2)}` }
+async function loadSubcatAndProducts(){
+  if(!window.supabaseClient){return}
+  const id = Number(window.qsParam?.('id'));
+  const titleEl = document.getElementById('sc-title');
+  const nameEl = document.getElementById('sc-name');
+  const grid = document.getElementById('prod-grid');
+  if(!id){ grid.innerHTML = `<div class='col-span-full text-center'>Falta parámetro id</div>`; return; }
+  // Subcategoría actual
+  const { data:sc } = await supabaseClient.from('categorias').select('*').eq('id', id).single();
+  if(sc){ titleEl.textContent = sc.nombre; nameEl.textContent = sc.nombre; }
+  // Productos de esta subcategoría
+  const { data, error } = await supabaseClient
+    .from('productos')
+    .select('*')
+    .eq('categoria_id', id)
+    .eq('activo', true)
+    .order('creado_en', { ascending: false });
+  if(error){ grid.innerHTML = `<div class='col-span-full text-center'>Error cargando productos</div>`; return; }
+  if(!data || data.length===0){ grid.innerHTML = `<div class='col-span-full text-center'>No hay productos</div>`; return; }
+  grid.innerHTML = data.map(p=>`
+    <div class="prod-card flex flex-col rounded-xl overflow-hidden bg-white border shadow-sm hover:shadow-lg transition-shadow group" data-pid="${p.id}" data-stock="${Number(p.stock||0)}">
+      <div class="relative w-full aspect-square overflow-hidden">
+        <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" src="${p.imagen_url || 'https://images.unsplash.com/photo-1520975922284-9d27911b2a71?auto=format&fit=crop&w=800&q=60'}"/>
+      </div>
+      <div class="flex flex-col p-4 gap-4 flex-grow">
+        <div class="flex flex-col gap-1 flex-grow">
+          <h3 class="font-bold text-primary text-base">${p.nombre}</h3>
+          <p class="font-semibold text-lg">${moneyUSD(Number(p.precio))}</p>
+          <p data-role="stock-text" class="text-sm ${Number(p.stock||0) > 0 ? 'text-green-600' : 'text-red-600'}">${Number(p.stock||0) > 0 ? `Stock: ${p.stock}` : 'Sin stock'}</p>
+        </div>
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div class="flex items-center gap-2">
+            <button type="button" aria-label="disminuir" data-qty-dec="#qty-p-${p.id}" data-qty-id="${p.id}" class="flex h-9 w-9 items-center justify-center rounded-full ${Number(p.stock||0) > 0 ? 'bg-primary/10 text-primary' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}" ${Number(p.stock||0) > 0 ? '' : 'disabled'}>-</button>
+            <input id="qty-p-${p.id}" class="no-spin w-14 h-9 text-center border rounded-md bg-white text-[#211911] font-medium" type="number" min="1" max="${Number(p.stock||0) || 1}" value="1" readonly/>
+            <button type="button" aria-label="aumentar" data-qty-inc="#qty-p-${p.id}" data-qty-add='${JSON.stringify({producto_id:"__ID__", nombre:"__N__", precio_unitario:"__PR__", imagen_url:"__IMG__"}).replace("__ID__", p.id).replace("__N__", (p.nombre||"").replace(/'/g,"\'")).replace("__PR__", String(p.precio)).replace("__IMG__", p.imagen_url||"")}' class="flex h-9 w-9 items-center justify-center rounded-full ${Number(p.stock||0) > 0 ? 'bg-primary/10 text-primary' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}" ${Number(p.stock||0) > 0 ? '' : 'disabled'}>+</button>
+          </div>
+          <button ${Number(p.stock||0) > 0 ? '' : 'disabled'} data-add='${JSON.stringify({producto_id:"__ID__", nombre:"__N__", precio_unitario:"__PR__", imagen_url:"__IMG__", cantidad:1}).replace("__ID__", p.id).replace("__N__", (p.nombre||"").replace(/'/g,"\'")).replace("__PR__", String(p.precio)).replace("__IMG__", p.imagen_url||"")}' data-qty-src="#qty-p-${p.id}" class="flex-1 flex items-center justify-center gap-2 rounded-lg h-10 px-4 ${Number(p.stock||0) > 0 ? 'bg-primary text-white hover:bg-opacity-90' : 'bg-gray-200 text-gray-500 cursor-not-allowed'} text-sm font-bold">
+            ${Number(p.stock||0) > 0 ? `<span class="material-symbols-outlined text-base">add_shopping_cart</span>` : ''}
+            <span>${Number(p.stock||0) > 0 ? 'Añadir' : 'Sin stock'}</span>
+          </button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+function updateCardStock(card){
+  const pid = card.getAttribute('data-pid');
+  const stock = Number(card.getAttribute('data-stock')||0);
+  const items = Cart.read();
+  const already = items.find(x=>String(x.producto_id)===String(pid))?.cantidad || 0;
+  const remaining = Math.max(0, stock - already);
+  const stockText = card.querySelector('[data-role="stock-text"]');
+  const minusBtn = card.querySelector('[data-qty-dec]');
+  const plusBtn = card.querySelector('[data-qty-inc]');
+  const addBtn = card.querySelector('[data-add]');
+  const input = card.querySelector('input[id^="qty-p-"]');
+  if(stockText){
+    if(remaining>0){
+      stockText.textContent = `Stock: ${remaining}`;
+      stockText.classList.remove('text-red-600');
+      stockText.classList.add('text-green-600');
+    } else {
+      stockText.textContent = 'Sin stock';
+      stockText.classList.remove('text-green-600');
+      stockText.classList.add('text-red-600');
+    }
+  }
+  // mantener max como stock total; pero clamp visual al remaining
+  if(input){
+    const cur = Math.max(1, parseInt(input.value||'1',10)||1);
+    input.value = String(Math.max(1, Math.min(cur, remaining || 1)));
+  }
+  // habilitar/deshabilitar
+  const disable = remaining<=0;
+  [minusBtn, plusBtn].forEach(b=>{ if(b){ b.disabled = disable; b.className = `flex h-9 w-9 items-center justify-center rounded-full ${disable?'bg-gray-200 text-gray-400 cursor-not-allowed':'bg-primary/10 text-primary'}`; }});
+  if(addBtn){
+    addBtn.disabled = disable;
+    addBtn.className = `flex-1 flex items-center justify-center gap-2 rounded-lg h-10 px-4 ${disable?'bg-gray-200 text-gray-500 cursor-not-allowed':'bg-primary text-white hover:bg-opacity-90'} text-sm font-bold`;
+    addBtn.innerHTML = disable ? '<span>Sin stock</span>' : '<span class="material-symbols-outlined text-base">add_shopping_cart</span><span>Añadir</span>';
+  }
+}
+
+window.refreshProductStocks = function refreshProductStocks(){
+  document.querySelectorAll('.prod-card').forEach(updateCardStock);
+}
+
+window.addEventListener('DOMContentLoaded', async ()=>{ await loadSubcatAndProducts(); refreshProductStocks(); });
+// Lightbox logic
+(function(){
+  const grid = document.getElementById('prod-grid');
+  const lb = document.getElementById('img-lightbox');
+  const lbImg = document.getElementById('lb-img');
+  const stage = document.getElementById('lb-stage');
+  const lbClose = document.getElementById('lb-close');
+  const zIn = document.getElementById('lb-zoom-in');
+  const zOut = document.getElementById('lb-zoom-out');
+  const zReset = document.getElementById('lb-zoom-reset');
+  if(!grid || !lb || !lbImg || !lbClose || !stage || !zIn || !zOut || !zReset) return;
+  let scale=1, tx=0, ty=0; const MIN=1, MAX=3.5;
+  function apply(){ lbImg.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`; lbImg.style.transformOrigin='center center'; stage.style.cursor = scale>1?'grab':'zoom-in'; }
+  function clamp(){ const rect=lbImg.getBoundingClientRect(); const sRect=stage.getBoundingClientRect(); const maxX=Math.max(0,(rect.width - sRect.width)/2); const maxY=Math.max(0,(rect.height - sRect.height)/2); tx=Math.max(-maxX, Math.min(maxX, tx)); ty=Math.max(-maxY, Math.min(maxY, ty)); }
+  function reset(){ scale=1; tx=0; ty=0; apply(); }
+  function open(src){ reset(); lbImg.src = src; lb.classList.remove('hidden'); document.body.classList.add('overflow-hidden'); }
+  function close(){ lb.classList.add('hidden'); lbImg.removeAttribute('src'); document.body.classList.remove('overflow-hidden'); reset(); }
+  grid.addEventListener('click', (e)=>{ const img = e.target.closest('.prod-card img'); if(img){ open(img.src); }});
+  lbClose.addEventListener('click', close);
+  lb.addEventListener('click', (e)=>{ if(e.target === lb){ close(); }});
+  window.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && !lb.classList.contains('hidden')) close(); });
+  // Zoom botones
+  zIn.addEventListener('click', ()=>{ scale=Math.min(MAX, scale+0.3); clamp(); apply(); });
+  zOut.addEventListener('click', ()=>{ scale=Math.max(MIN, scale-0.3); if(scale===1){ tx=ty=0; } clamp(); apply(); });
+  zReset.addEventListener('click', ()=>{ reset(); });
+  // Doble clic para alternar zoom
+  stage.addEventListener('dblclick', (ev)=>{ if(scale===1){ scale=2; const r=stage.getBoundingClientRect(); tx=(r.width/2 - (ev.clientX - r.left)); ty=(r.height/2 - (ev.clientY - r.top)); } else { scale=1; tx=ty=0; } clamp(); apply(); });
+  // Scroll para zoom
+  stage.addEventListener('wheel', (ev)=>{ ev.preventDefault(); const dir = ev.deltaY>0?-1:1; const before=scale; scale = Math.max(MIN, Math.min(MAX, scale + dir*0.15)); // mantener foco
+    if(scale!==before){ const r=stage.getBoundingClientRect(); const cx=ev.clientX - r.left - r.width/2; const cy=ev.clientY - r.top - r.height/2; tx -= cx*(scale-before); ty -= cy*(scale-before); clamp(); apply(); }
+  }, { passive:false });
+  // Arrastrar para pan
+  let dragging=false, sx=0, sy=0, ox=0, oy=0;
+  stage.addEventListener('mousedown', (ev)=>{ if(scale<=1) return; dragging=true; stage.style.cursor='grabbing'; sx=ev.clientX; sy=ev.clientY; ox=tx; oy=ty; });
+  window.addEventListener('mousemove', (ev)=>{ if(!dragging) return; tx=ox + (ev.clientX - sx); ty=oy + (ev.clientY - sy); clamp(); apply(); });
+  window.addEventListener('mouseup', ()=>{ if(dragging){ dragging=false; stage.style.cursor='grab'; }});
+})();
+</script>
+</body></html>
